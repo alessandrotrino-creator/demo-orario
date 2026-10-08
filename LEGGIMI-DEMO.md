@@ -92,6 +92,24 @@ Orario Facile → **Esporta** → riquadro «Database completo da file Excel (.x
   16 docenti, 17 aule con il tipo, 270 ore di cattedra, giorni liberi, indisponibilità e limiti). Con questi vincoli il
   generatore colloca tutte le 270 ore senza conflitti.
 
+**Altri due esempi sulle aule** (stessa scuola inventata, stessi docenti e cattedre; cambiano solo le aule).
+Questi due file NON sono nel repository: stanno sul computer di chi presenta, nella cartella `test-orario` del Desktop,
+e si caricano con «📂 Carica da file Excel» scegliendoli da lì.
+
+1. **`FOGLIO-PROVA-database-13aule-16docenti-TEST.xlsx`** – meno aule che docenti. Quattro aule sono condivise:
+   Aula Matematica 2 (Solari + Danesi), Aula Francese e Arte (Dufort + Albizzi), Aula Lingue (Ashford + Rinaldelli),
+   Aula Lettere 5 (Ferrandi + Lodigiani); l'**Aula 13 (libera)** non è assegnata a nessuno.
+   - *Così com'è*: «Genera orario» si ferma con la **Diagnosi di fattibilità**: «Aula Matematica 2 / Aula Francese e Arte:
+     devono ospitare 36 ore ma ne offrono al massimo 30… aggiungi un'aula a questi docenti». Con «Genera comunque»
+     restano fuori circa 13 ore.
+   - *La correzione* (scheda **Docenti** → «+ aggiungi aula…»): Danesi → Aula 13 (libera) e Aula musica · Solari → Aula 13 e
+     Aula Lettere 4 · Albizzi → Aula 13 · Dufort → Aula Lettere 1 · Rinaldelli → Aula Lettere 2 · Lodigiani → Aula Lettere 3.
+     Poi «Genera orario»: 270/270 (se resta 1 ora, **✨ Ottimizza** la colloca).
+2. **`FOGLIO-PROVA-database-11aule-9classi-TEST.xlsx`** – appena più aule che classi (Aula 1-8, Lab. scienze, Lab. tecnologia,
+   Palestra): nessun docente ha un'aula tutta sua, ognuno ha un'aula preferita e due alternative. Le aule si riempiono quasi
+   tutte (alcune 30 ore su 30): di solito 270/270; a volte restano 1-2 ore → **✨ Ottimizza**, «Genera orario» di nuovo con
+   qualità «Accurata», oppure trascinale a mano nella vista «Per aula».
+
 **Come si scrive il file** (è il formato del Foglio database della scuola: dettagli anche nella scheda «Leggimi» del file e in
 `orario-facile/DATABASE-TEST.md`). Non cambiare i nomi delle schede né l'ordine delle colonne; riga 1 = intestazione.
 
