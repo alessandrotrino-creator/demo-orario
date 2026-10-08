@@ -9,6 +9,16 @@ presentazione la riempi, generi l'orario e lo **pubblichi in diretta**; i telefo
 - nessun collegamento a Google Drive o ai dati della scuola (ID svuotati in `app/js/config-TEST.js`);
 - docenti e classi sono inventati.
 
+## 0. Aggiornare la demo già caricata (8 ottobre 2026)
+
+La demo è già su `https://alessandrotrino-creator.github.io/demo-orario/`. Rispetto a quella caricata sono cambiati
+4 file: nel repository fai **Add file → Upload files** e trascina, mantenendo le cartelle (oppure ricarica tutto il
+contenuto della cartella: i file uguali restano uguali):
+- `.nojekyll` (nuovo, vuoto: se non si trascina, **Add file → Create new file**, nome `.nojekyll`, Commit)
+- `app/icone/qr-app-TEST.svg` (il QR della demo)
+- `app/js/dati-TEST.js` e `orario-facile/index.html` (la demo salva i dati con un nome suo, `demoorario.bozza`: il vecchio
+  Orario Facile del repository `orario`, sullo stesso indirizzo, usa `orariofacile.v2` e così non si mescolano)
+
 ## 1. Mettere la demo online (una volta sola, ~10 minuti)
 
 1. Su GitHub, con il **tuo account personale** (non `comprensivoalmese`): **New repository** → nome **`demo-orario`**
@@ -22,17 +32,32 @@ presentazione la riempi, generi l'orario e lo **pubblichi in diretta**; i telefo
 4. Dopo 1-2 minuti la demo è su `https://tuonome.github.io/demo-orario/`. Aprila e controlla che si veda la pagina con
    l'avviso giallo «DEMO per la presentazione».
 
-## 2. Il «token» per pubblicare (prima di ogni presentazione)
+## 2. Il «token» per pubblicare (una volta, 2-3 giorni prima della presentazione)
 
-«📤 Pubblica» scrive i file in `dati/` del repository: per farlo GitHub vuole un permesso, il token.
-1. GitHub → foto in alto a destra → **Settings → Developer settings → Personal access tokens → Fine-grained tokens →
-   Generate new token**.
-2. Nome: «demo orario»; **Expiration**: 7 giorni; **Repository access: Only select repositories → `demo-orario`**;
-   **Permissions → Repository permissions → Contents: Read and write** (nient'altro) → **Generate token**.
-3. Copia il token e tienilo a portata di mano (es. in un file sul tuo computer, mai sulle slide o nel repository).
-   La prima volta che premi «📤 Pubblica» la pagina lo chiede: incollalo. Resta solo in quella scheda del browser e
-   sparisce quando la chiudi. Anche se qualcuno lo trovasse, potrebbe solo scrivere nel repository `demo-orario`.
-   Dopo la presentazione puoi cancellarlo da GitHub (stessa pagina → Delete).
+**Che cos'è.** Quando premi «📤 Pubblica», la pagina deve salvare un file nel tuo repository `demo-orario`, come faresti tu
+caricandolo a mano. GitHub però non lascia scrivere una pagina web a nome tuo senza un permesso: il token è quel permesso.
+È una lunga parola segreta (comincia con `github_pat_…`) che crei tu su GitHub, una specie di **chiave di una sola stanza**:
+apre solo il repository `demo-orario`, solo per leggere e scrivere i file, e smette di funzionare alla data di scadenza.
+
+**Come si crea** (sul computer, con GitHub aperto e il tuo account):
+1. Vai su **https://github.com/settings/personal-access-tokens/new**
+   (oppure: foto in alto a destra → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token).
+2. **Token name**: `demo orario`. **Expiration**: scegli una data qualche giorno **dopo** la presentazione.
+3. **Repository access**: «Only select repositories» → scegli **`demo-orario`**.
+4. **Permissions** → «Repository permissions» → **Contents** → **Read and write** (lascia tutto il resto com'è).
+5. **Generate token** → GitHub lo mostra **una volta sola**: copialo e incollalo in un file di testo sul tuo computer
+   (es. sul Desktop). Non metterlo sulle slide, nel repository o in chat.
+
+**Come si usa.** In presentazione, la prima volta che premi «📤 Pubblica» compare una finestrella: incolli il token, OK.
+La pagina lo ricorda solo finché quella scheda resta aperta. Chiudendola lo dimentica: alla volta dopo lo chiede di nuovo.
+Anche se qualcuno lo vedesse, potrebbe solo cambiare i file della demo, e solo fino alla scadenza.
+Dopo la presentazione puoi cancellarlo: stessa pagina di GitHub → il token → **Delete**.
+
+**Fai una prova generale** il giorno in cui lo crei: pubblica una volta l'orario e guarda se compare sul tuo telefono
+(poi rimetti la demo vuota, vedi sotto). Se il token è sbagliato o scaduto, la pagina lo dice e te lo richiede.
+
+**Senza token?** Si può: Esporta → «Scarica orario-TEST.json» → su GitHub, cartella `dati` del repository → Add file →
+Upload files → trascina il file → Commit. Funziona solo per l'orario (non per le sostituzioni) e in diretta è più lento.
 
 ## 3. In presentazione
 
