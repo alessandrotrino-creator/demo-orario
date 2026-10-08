@@ -414,5 +414,146 @@ const DatabaseOrario = (() => {
   }
   tasti();
 
-  return { configurato, carica, salva, daFoglio, aFoglio, leggiCella };
+  /* ================================================================================================================
+     COPIA DI PROVA: lo stesso formato del Foglio database, ma su un FILE Excel del computer (niente Google Drive).
+     - «📂 Carica da file Excel»: legge un .xlsx con le schede Impostazioni, Vincoli, Discipline, Aule, Classi, Quadro,
+       Docenti, Cattedre e (facoltativa) Orario. Righe e colonne sono quelle del Foglio (vedi DATABASE-TEST.md):
+       la riga 1 di ogni scheda è l'intestazione, i dati partono dalla riga 2 (nell'Orario dalla riga 3).
+       La lettura è la stessa di «Carica dal Foglio» (daFoglio), quindi i controlli e i messaggi sono gli stessi.
+     - «💾 Salva su file Excel»: scrive i dati di Orario Facile nello stesso formato (aFoglio), da modificare e ricaricare.
+     - «📄 Scarica il modello vuoto»: lo stesso file con le materie standard e i vincoli predefiniti, senza classi né docenti.
+     ================================================================================================================ */
+  // Da dove partono i dati in ogni scheda (riga contando da 0): come le ZONE del Foglio
+  const INIZIO = { impostazioni: ['Impostazioni', 1], vincoli: ['Vincoli', 1], discipline: ['Discipline', 1], aule: ['Aule', 1],
+    classi: ['Classi', 0], quadro: ['Quadro', 0], docentiTitoli: ['Docenti', 0, 1], docenti: ['Docenti', 1], cattedre: ['Cattedre', 1],
+    orario: ['Orario', 0] };
+  const OBBLIGATORIE = ['Classi', 'Docenti', 'Cattedre'];
+  // Excel trasforma «08:00» in una frazione di giorno (0,3333…): la si riporta a ore:minuti
+  const oraDaExcel = v => {
+    const s = testo(v); if (!/^0?[.,]\d+$/.test(s)) return s;
+    const min = Math.round(parseFloat(s.replace(',', '.')) * 1440);
+    return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+  };
+  async function caricaDaFile(file) {
+    if (!/\.xls[xm]$/i.test(file.name)) throw new Error('serve un file Excel .xlsx (se è un .ods o un .xls, salvalo come .xlsx)');
+    const fogli = await leggiXLSX(await file.arrayBuffer());   // lettore di Orario Facile (index.html)
+    const perNome = new Map(fogli.map(f => [semplice(f.nome), f.righe]));
+    const mancano = OBBLIGATORIE.filter(n => !perNome.has(semplice(n)));
+    if (mancano.length) throw new Error('nel file mancano le schede ' + mancano.join(', ') + ' (i nomi delle schede devono essere quelli del modello)');
+    const z = {};
+    Object.keys(INIZIO).forEach(k => {
+      const [nome, da, quante] = INIZIO[k];
+      const righe = (perNome.get(semplice(nome)) || []).map(r => r || []);
+      z[k] = quante ? righe.slice(da, da + quante) : righe.slice(da);
+    });
+    z.impostazioni = z.impostazioni.map(r => semplice(r[0]).startsWith('inizio') ? [r[0], oraDaExcel(r[1])] : r);
+    return daFoglio(z);
+  }
+  function applicaFile(r) {
+    S = r.stato; POOL = []; normalizza(); save(true);
+    if (typeof vai === 'function') vai(r.lezioni ? 'orario' : 'docenti'); else render();
+  }
+
+  // Intestazioni (riga 1) delle schede dove il Foglio le ha nel modello e aFoglio non le scrive
+  const TITOLI_FILE = {
+    Impostazioni: ['Voce', 'Valore'],
+    Vincoli: ['Vincolo (non cambiare questa colonna)', 'Valore (numero oppure SI/NO)', 'Spiegazione'],
+    Discipline: ['Sigla', 'Nome', 'Ore standard', 'Principale (SI/NO)', 'Blocchi di 2 ore (SI/NO)', 'Modo blocchi', 'Può stare all\'ultima ora (SI/NO)', 'Colore (0-360)'],
+    Aule: ['Aula', 'Tipo (Aula, Laboratorio, Palestra…)', 'Più classi insieme (SI/NO)'],
+    Cattedre: ['Docente (come nella colonna Codice di Docenti)', '(non usata)', 'Classe', 'Sigla della materia', 'Ore'],
+    Orario: ['Docente', '(non usata)']
+  };
+  const LEGGIMI = [
+    'COME SI COMPILA QUESTO FILE (Orario Facile → Esporta → «📂 Carica da file Excel»)',
+    '',
+    'Non cambiare i nomi delle schede né l\'ordine delle colonne. Riga 1 = intestazione, i dati partono dalla riga 2.',
+    'Obbligatorie: Classi, Docenti, Cattedre. Le altre, se mancano, prendono i valori predefiniti. «Orario» è facoltativa.',
+    '',
+    'Impostazioni: Scuola · Anno scolastico · Durata ora (minuti) · Inizio lezioni (08:00) · Ore del mattino · Ore del pomeriggio ·',
+    '   Giorni (separati da virgola: Lunedì, Martedì, Mercoledì, Giovedì, Venerdì)',
+    'Vincoli: i nomi della colonna A sono fissi (maxConsec, maxOreGiorno, giornoLibero, pesoBuchi…): cambia solo la colonna B.',
+    '   Numero oppure SI/NO. I «peso…» (0-10) dicono al generatore quanto conta ogni preferenza.',
+    'Discipline: Sigla (ITA, MAT…: si usa nelle altre schede) · Nome · Ore standard · Principale · Blocchi di 2 ore ·',
+    '   Modo blocchi (vuoto) · Può stare all\'ultima ora · Colore (numero 0-360)',
+    'Aule: Nome dell\'aula · Tipo · Più classi insieme (SI per palestre e aule grandi)',
+    'Classi: Classe (1A) · Anno (1, 2, 3) · per ogni giorno le ore di lezione «mattino» e «pomeriggio»',
+    '   (le intestazioni devono essere «Lunedì mattino», «Lunedì pomeriggio», …)',
+    'Quadro: monte ore settimanale di ogni materia per classe. Riga 1 = Classe e poi le SIGLE delle materie.',
+    'Docenti: Codice (il nome con cui il docente compare: es. «Rosa Fantini» oppure DOC01) · Cognome · Nome (facoltativi) ·',
+    '   Aule (separate da virgola, la prima è la principale) · Giorno libero (es. Venerdì) · Max ore al giorno ·',
+    '   Max ore consecutive · Indisponibilità (es. «Lunedì 1,2; Venerdì 6» = lunedì 1ª e 2ª ora, venerdì 6ª; p1 = 1ª del pomeriggio)',
+    'Cattedre: una riga per docente-classe-materia: Docente (come in Docenti, colonna Codice) · (B vuota) · Classe · Sigla · Ore',
+    'Orario (facoltativa): righe 1-2 giorni e ore; dalla riga 3 un docente per riga (colonna A) e una colonna per ogni ora',
+    '   dalla C: «1A» = classe 1A · «1A STO» = materia STO · «1A ITA @Palestra» = in un\'altra aula · «+2B SOS» = compresenza ·',
+    '   «… *» = lezione bloccata. Lasciala vuota se vuoi far generare tutto l\'orario a Orario Facile.',
+    '',
+    'Dopo il caricamento: controlla le schede di Orario Facile, poi Orario → «Genera orario».'
+  ];
+  // Dati di Orario Facile -> file Excel con le schede del Foglio (stesse posizioni di aFoglio)
+  function aFile(st) {
+    const { dati, avvisi } = aFoglio(st);
+    const colonna = s => { let n = 0; for (const ch of s) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+    const fogli = new Map(['Impostazioni', 'Vincoli', 'Discipline', 'Aule', 'Classi', 'Quadro', 'Docenti', 'Cattedre', 'Orario'].map(n => [n, []]));
+    dati.forEach(({ range, values }) => {
+      const m = range.match(/^'?(.+?)'?!([A-Z]+)(\d+)/); if (!m || !fogli.has(m[1])) return;
+      const g = fogli.get(m[1]), c0 = colonna(m[2]), r0 = +m[3] - 1;
+      values.forEach((riga, i) => riga.forEach((v, j) => {
+        if (v === '' || v == null) return;
+        (g[r0 + i] = g[r0 + i] || [])[c0 + j] = v;
+      }));
+    });
+    Object.keys(TITOLI_FILE).forEach(n => {
+      const g = fogli.get(n); g[0] = g[0] || [];
+      TITOLI_FILE[n].forEach((t, j) => { if (g[0][j] == null || g[0][j] === '') g[0][j] = t; });
+    });
+    const cella = (v, r) => r === 0 ? { v, stile: 'intest' } : v;
+    const elenco = [{ nome: 'Leggimi', larghezze: [130], righe: LEGGIMI.map((t, i) => [i ? t : { v: t, stile: 'titolo' }]) }];
+    fogli.forEach((righe, nome) => {
+      const piene = Array.from(righe, r => Array.from(r || [], v => v == null ? '' : v));
+      const larg = Math.max(...piene.map(r => r.length), 1);
+      elenco.push({ nome, blocca: nome === 'Orario' ? 2 : 1, righe: piene.map((r, i) => r.map(v => cella(v, nome === 'Orario' ? (i < 2 ? 0 : 1) : i))),
+        larghezze: new Array(larg).fill(nome === 'Orario' ? 9 : 16).map((x, j) => j === 0 ? 22 : (nome === 'Vincoli' && j === 2 ? 60 : x)) });
+    });
+    return { blob: Xlsx.crea(elenco), avvisi };
+  }
+  function scaricaFile(blob, nome) {
+    const u = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = u; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 1500);
+  }
+  function modelloVuoto() {
+    const st = statoVuoto(); st.discipline = discDefault();
+    st.meta.nome = 'Scuola di prova'; st.giorni = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']; st.oreM = 6; st.oreP = 2;
+    return st;
+  }
+  function tastiFile() {
+    const $id = x => document.getElementById(x);
+    const bCarica = $id('btnFileDbCarica'), bSalva = $id('btnFileDbSalva'), bModello = $id('btnFileDbModello'), scelta = $id('fileDb'), stato = $id('statoFileDb');
+    if (!bCarica || !scelta) return;
+    const ora = () => new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    bCarica.addEventListener('click', () => scelta.click());
+    scelta.addEventListener('change', async () => {
+      const f = scelta.files && scelta.files[0]; scelta.value = ''; if (!f) return;
+      try {
+        const r = await caricaDaFile(f);
+        const elenco = r.problemi.length ? ` Attenzione, ${r.problemi.length} problemi: ${r.problemi.slice(0, 10).join(' · ')}${r.problemi.length > 10 ? ' · …' : ''}.` : ' Nessun problema trovato.';
+        const ore = r.stato.docenti.reduce((n, t) => n + t.cattedre.reduce((m, k) => m + k.ore, 0), 0);
+        chiedi(`Nel file «${f.name}» ci sono ${r.stato.classi.length} classi, ${r.stato.docenti.length} docenti, ${r.stato.aule.length} aule, ` +
+          `${ore} ore di cattedra e ${r.lezioni} lezioni già collocate.${elenco} Caricandolo sostituisci i dati di Orario Facile su questo computer.`, () => {
+          applicaFile(r); if (stato) stato.textContent = `✔ Caricato da «${f.name}» alle ${ora()}.`;
+          if (!r.lezioni) avvisa('Dati caricati. Controlla le schede (Classi, Docenti, Vincoli…), poi vai in Orario e premi «Genera orario».');
+        }, 'Carica');
+      } catch (e) { avvisa('Non riesco a leggere il file: ' + (e && e.message ? e.message : e) + '.'); }
+    });
+    if (bSalva) bSalva.addEventListener('click', () => {
+      const { blob, avvisi } = aFile(S);
+      scaricaFile(blob, `Database orario ${new Date().toISOString().slice(0, 10)}.xlsx`);
+      if (stato) stato.textContent = `✔ File salvato alle ${ora()} (nella cartella Download).`;
+      if (avvisi.length) avvisa('Attenzione: ' + avvisi.join(' · ') + '.');
+    });
+    if (bModello) bModello.addEventListener('click', () => scaricaFile(aFile(modelloVuoto()).blob, 'Modello database orario (vuoto).xlsx'));
+  }
+  tastiFile();
+
+  return { configurato, carica, salva, daFoglio, aFoglio, leggiCella, caricaDaFile, aFile, modelloVuoto };
 })();

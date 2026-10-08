@@ -590,6 +590,22 @@ td input[type=number]{width:64px}
       <div class="row"><button class="btn" id="btnCreaAutorizzazioni">Crea la scheda Autorizzazioni</button>
         <span class="hint" id="statoAutorizzazioni">Una volta sola: copia chi è autorizzato alle sostituzioni nel foglio di prima e aggiunge te.</span></div>
     </div>
+    <!-- DEMO: lo stesso formato del Foglio database, ma su un file Excel del computer (database-TEST.js, tastiFile) -->
+    <div class="card">
+      <h3>Database completo da file Excel (.xlsx)</h3>
+      <p class="hint">Un unico file con <b>tutti</b> i dati per generare l'orario: giorni e ore di lezione, vincoli, materie, aule,
+        ore di lezione di ogni classe, monte ore per materia (Quadro), docenti con aule, giorno libero, limiti e indisponibilità,
+        ore di cattedra (Cattedre) e, se vuoi, un orario già scritto. È lo stesso formato del Foglio database della scuola.
+        Esempio pronto: <a href="../FOGLIO-PROVA-database-completo-TEST.xlsx" download>FOGLIO-PROVA-database-completo-TEST.xlsx</a>
+        (scuola inventata). Le istruzioni sono nella scheda «Leggimi» del file.</p>
+      <div class="row">
+        <button class="btn" id="btnFileDbCarica">📂 Carica da file Excel</button>
+        <button class="btn ghost" id="btnFileDbSalva">💾 Salva su file Excel</button>
+        <button class="btn ghost" id="btnFileDbModello">📄 Scarica il modello vuoto</button>
+        <input type="file" id="fileDb" accept=".xlsx,.xlsm" hidden>
+        <span class="hint" id="statoFileDb"></span>
+      </div>
+    </div>
     <div class="card">
       <h3>Backup completo (.json)</h3>
       <div class="row">

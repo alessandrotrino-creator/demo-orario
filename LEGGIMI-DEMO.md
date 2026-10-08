@@ -81,6 +81,36 @@ Tutto quello che i corsisti toccano sul loro telefono resta sul loro telefono: n
 Cosa NON si può mostrare (nella scuola passa da Google Drive): Nomi da Drive, scheda 8 Compresenze, foglio del conteggio
 ore, 40+40, impegni, piantine.
 
+## 3b. Caricare TUTTI i dati da un file Excel (aule, cattedre, monte ore, vincoli…)
+
+Orario Facile → **Esporta** → riquadro «Database completo da file Excel (.xlsx)»:
+- **📂 Carica da file Excel** – legge un file con tutti i dati e li mette in Orario Facile (prima mostra cosa ha trovato e gli
+  eventuali errori, riga per riga). Poi: scheda Orario → **Genera orario** (con i tuoi vincoli) → **📤 Pubblica orario**.
+- **📄 Scarica il modello vuoto** – il file da compilare, con le materie standard e i vincoli predefiniti già scritti.
+- **💾 Salva su file Excel** – scrive i dati attuali nello stesso formato (per modificarli in Excel e ricaricarli).
+- Esempio pronto, scuola inventata con vincoli: **`FOGLIO-PROVA-database-completo-TEST.xlsx`** (9 classi da 30 ore,
+  16 docenti, 17 aule con il tipo, 270 ore di cattedra, giorni liberi, indisponibilità e limiti). Con questi vincoli il
+  generatore colloca tutte le 270 ore senza conflitti.
+
+**Come si scrive il file** (è il formato del Foglio database della scuola: dettagli anche nella scheda «Leggimi» del file e in
+`orario-facile/DATABASE-TEST.md`). Non cambiare i nomi delle schede né l'ordine delle colonne; riga 1 = intestazione.
+
+| Scheda | Una riga per… | Colonne |
+|---|---|---|
+| **Impostazioni** | voce | A voce · B valore: Scuola, Anno scolastico, Durata ora (minuti), Inizio lezioni (08:00), Ore del mattino, Ore del pomeriggio, Giorni (`Lunedì, Martedì, …`) |
+| **Vincoli** | vincolo | A nome fisso (`maxConsec`, `maxConsecDoc`, `maxOreGiorno`, `maxOreDiscGiorno`, `rispettaIndisp`, `giornoLibero`, `peso…`) · B valore (numero o SI/NO) · C spiegazione |
+| **Discipline** | materia | A sigla (ITA, MAT…) · B nome · C ore standard · D principale SI/NO · E blocchi di 2 ore SI/NO · F (vuota) · G può stare all'ultima ora SI/NO · H colore 0-360 |
+| **Aule** | aula | A nome · B tipo (Aula, Laboratorio, Palestra) · C più classi insieme SI/NO |
+| **Classi** | classe | A classe (1A) · B anno · poi per ogni giorno due colonne: «Lunedì mattino», «Lunedì pomeriggio», … = ore di lezione |
+| **Quadro** | classe | A classe · poi una colonna per materia (riga 1 = SIGLA) = monte ore settimanale |
+| **Docenti** | docente | A Codice (nome mostrato, es. «Rosa Fantini») · B Cognome · C Nome (facoltativi) · D aule separate da virgola (la prima è la principale) · E giorno libero · F max ore al giorno · G max ore consecutive · H indisponibilità (`Lunedì 1,2; Venerdì 6,p1`) |
+| **Cattedre** | docente+classe+materia | A docente (come in Docenti, colonna A) · B vuota · C classe · D sigla materia · E ore |
+| **Orario** *(facoltativa)* | docente | righe 1-2 giorni e ore; dalla riga 3: A docente · da C una colonna per ora: `1A`, `1A STO`, `1A ITA @Palestra`, `+2B SOS` (compresenza), `… *` (bloccata) |
+
+Obbligatorie: Classi, Docenti, Cattedre. Le altre schede, se mancano, prendono i valori predefiniti.
+Controllo utile: per ogni classe, la somma delle ore in Classi (giorno per giorno) deve essere uguale al totale del Quadro,
+e le ore delle Cattedre di quella classe devono coprire il Quadro materia per materia (Orario Facile lo segnala nelle schede).
+
 ## 4. Dopo la presentazione: tornare a vuoto
 
 Nel repository su GitHub apri `dati/orario-TEST.json` → matita (Edit) → sostituisci tutto con il contenuto di
