@@ -1,0 +1,51 @@
+/*
+  barra-TEST.css – tasti della barra in alto sui telefoni.
+  Sugli schermi stretti i tasti diventano piccoli tondi con la sola icona, per guadagnare spazio.
+  La scritta non si cancella: resta nascosta alla vista ma la leggono i lettori di schermo.
+  Su tablet e computer non cambia niente (le icone di "Oggi" e "Il mio orario" lì non si vedono).
+*/
+
+/* ---------- Tasto selezionato: un solo cerchio blu, senza riempimento (su tutti gli schermi) ----------
+   aria-pressed="true"  = la funzione è accesa (In breve, Il mio orario, Oggi, Nomi)
+   aria-expanded="true" = il suo pannello è aperto (menu del profilo)
+   Il cerchio è il bordo del tasto che diventa blu, ingrossato da un'ombra blu attaccata (così è uno solo).
+   La campanella no: quando è attiva è riempita di giallo con l'alone (css/campanella-TEST.css). */
+.azioni-barra [aria-pressed="true"],
+.azioni-barra [aria-expanded="true"]:not(.pulsante-campanella) {
+  border-color: var(--primario);   /* solo il bordo diventa blu: cerchio sottilissimo di 1px */
+}
+/* Il tondo del profilo è già blu: il cerchio si vede solo se c'è un filo del colore di fondo in mezzo */
+.azioni-barra .pulsante-utente[aria-expanded="true"] {
+  box-shadow: 0 0 0 2px var(--superficie), 0 0 0 3px var(--primario);   /* filo bianco di 2px, poi cerchio blu di 1px */
+}
+
+/* Tutti i tasti della barra hanno la stessa forma tondeggiante (a pillola), come «In breve» */
+.azioni-barra .pulsante { border-radius: 999px; }
+
+/* Icone che servono solo sui telefoni */
+.icona-telefono { display: none; }
+
+@media (max-width: 520px) {
+  /* Tutti i tasti della barra: tondi da 40px, solo icona */
+  .azioni-barra .pulsante,
+  .azioni-barra .pulsante-campanella,
+  .azioni-barra .pulsante-utente {
+    width: 40px; height: 40px; min-height: 40px; padding: 0;
+    display: inline-grid; place-items: center; flex: none; border-radius: 50%;
+  }
+  .azioni-barra .pulsante svg,
+  .azioni-barra .pulsante-campanella svg { width: 20px; height: 20px; }
+  .icona-telefono { display: block; }
+  /* La scritta sparisce alla vista (stessa tecnica di .solo-lettori in app-TEST.css) */
+  .azioni-barra .testo-tasto {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .azioni-barra { gap: 6px; }
+  .pulsante-utente { font-size: .85rem; }
+  /* Con i tasti piccoli c'è di nuovo posto per la scritta "Orario" accanto al logo */
+  .testo-marchio { display: flex; }
+  /* Il logo prende solo lo spazio che avanza dai tasti (base 0): così è il nome della scuola ad accorciarsi con "…"
+     e i tasti non vanno a capo */
+  .marchio { flex: 1 1 0; }
+}

@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- © 2026 Istituto Comprensivo di Almese (www.comprensivoalmese.it) – realizzato dal Gruppo Wolf.
+     Tutti i diritti riservati: nessun uso senza permesso scritto della scuola (vedi LICENZA.md) -->
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luis@i – IC Almese</title>
+  <link rel="icon" href="app/icone/icona-TEST.svg" type="image/svg+xml">
+  <!-- Icona per iPhone/iPad quando si usa "Aggiungi alla schermata Home" (Apple non legge l'SVG) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="app/icone/apple-touch-icon-TEST.png">
+  <style>
+    :root { --sfondo: #f4f6fa; --scheda: #fff; --testo: #1a1f2b; --tenue: #566074; --primario: #1c56b8; --bordo: #d8dde7; }
+    @media (prefers-color-scheme: dark) {
+      :root { --sfondo: #11151c; --scheda: #1a2029; --testo: #e8ecf3; --tenue: #a3adbf; --primario: #7fa8f5; --bordo: #313a48; }
+    }
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 32px 16px; background: var(--sfondo); color: var(--testo); }
+    main { max-width: 720px; margin: 0 auto; }
+    h1 { margin: 0 0 4px; }
+    p { color: var(--tenue); }
+    .schede { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 24px; }
+    /* Ogni scheda è un link grande, comodo da toccare */
+    .scheda { display: block; padding: 20px; border-radius: 16px; background: var(--scheda); border: 1px solid var(--bordo); color: inherit; text-decoration: none; }
+    .scheda:hover, .scheda:focus-visible { border-color: var(--primario); }
+    .scheda strong { display: block; font-size: 1.2rem; color: var(--primario); margin-bottom: 6px; }
+    .scheda span { color: var(--tenue); }
+    .crediti { margin-top: 32px; font-size: .85rem; }
+    .crediti a { color: var(--primario); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Luis@i</h1>
+    <p>Progetto del gruppo Wolf.</p>
+    <!-- DEMO ONLINE: avviso ben visibile -->
+    <p role="note" style="border:2px dashed #d08a00;background:#fff6e0;color:#5a3d00;border-radius:12px;padding:10px 14px;font-weight:600">
+      DEMO per la presentazione: scuola e docenti sono inventati. Non è l'orario dell'Istituto e non è collegata ai suoi dati.</p>
+    <div class="schede">
+      <a class="scheda" href="app/">
+        <strong>Visualizza l'orario</strong>
+        <span>Per docenti, studenti e monitor di classe. Accesso con l'account della scuola.</span>
+      </a>
+      <a class="scheda" href="orario-facile/">
+        <strong>Orario Facile</strong>
+        <span>Crea e modifica l'orario delle classi e organizza le sostituzioni dei docenti assenti. Riservato a chi prepara l'orario. Già compilato con i dati della scuola 2026/27 (aggiornato il 24/09/2026).</span>
+      </a>
+    </div>
+  </main>
+  <!-- Copyright e condizioni d'uso del codice (vedi LICENZA.md) -->
+  <footer class="crediti">
+    <p>© 2026 Istituto Comprensivo di Almese
+      (<a href="https://www.comprensivoalmese.it">www.comprensivoalmese.it</a>) – realizzato dal Gruppo Wolf.
+      Tutti i diritti riservati: il codice si può usare solo con il permesso della scuola
+      (<a href="https://github.com/comprensivoalmese/orario/blob/main/LICENZA.md">condizioni d'uso</a>).</p>
+  </footer>
+</body>
+</html>

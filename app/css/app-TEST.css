@@ -1,0 +1,611 @@
+/*
+  app-TEST.css – stile dell'app Luis@i
+  Mobile first: prima le regole per il telefono, poi quelle per schermi più grandi.
+*/
+
+/* ---------- Colori (tema chiaro e scuro) ---------- */
+:root {
+  --sfondo: #f4f6fa;
+  --superficie: #ffffff;
+  --testo: #1a1f2b;
+  --testo-tenue: #566074;
+  --bordo: #d8dde7;
+  --primario: #1c56b8;
+  --primario-testo: #ffffff;
+  --evidenza: #fff3c4;
+  --evidenza-bordo: #d9a300;
+  --avviso: #eef3fd;
+  --errore: #b3261e;
+  --sost-bordo: #c2410c;      /* sostituzioni: arancione scuro, il testo bianco si legge bene */
+  --su-errore: #fff;          /* testo sopra il rosso di --errore */
+  --lezione-l: 94%;   /* luminosità dello sfondo delle lezioni */
+  --lezione-s: 70%;
+  --lezione-bordo-l: 42%;
+  --ombra: 0 1px 3px rgba(20, 30, 50, .12);
+  color-scheme: light dark;
+}
+/* Tema scuro: si applica se il dispositivo è in modalità scura (salvo scelta "chiaro")
+   oppure se nell'app si è scelto "scuro" (o "secondo l'ora" di sera).
+   Le stesse variabili sono ripetute due volte perché il CSS non permette di unire i due casi. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="chiaro"]) {
+    --sfondo: #11151c;
+    --superficie: #1a2029;
+    --testo: #e8ecf3;
+    --testo-tenue: #a3adbf;
+    --bordo: #313a48;
+    --primario: #7fa8f5;
+    --primario-testo: #0d1a33;
+    --evidenza: #3d3413;
+    --evidenza-bordo: #e6b422;
+    --avviso: #1d2738;
+    --errore: #ff8a80;
+    --su-errore: #1a1f2b;
+    --lezione-l: 20%;
+    --lezione-s: 40%;
+    --lezione-bordo-l: 62%;
+    --ombra: 0 1px 3px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-tema="scuro"] {
+  --sfondo: #11151c;
+  --superficie: #1a2029;
+  --testo: #e8ecf3;
+  --testo-tenue: #a3adbf;
+  --bordo: #313a48;
+  --primario: #7fa8f5;
+  --primario-testo: #0d1a33;
+  --evidenza: #3d3413;
+  --evidenza-bordo: #e6b422;
+  --avviso: #1d2738;
+  --errore: #ff8a80;
+  --su-errore: #1a1f2b;
+  --lezione-l: 20%;
+  --lezione-s: 40%;
+  --lezione-bordo-l: 62%;
+  --ombra: 0 1px 3px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+:root[data-tema="chiaro"] { color-scheme: light; }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  background: var(--sfondo);
+  color: var(--testo);
+}
+[hidden] { display: none !important; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+
+/* Testo letto solo dai lettori di schermo */
+.solo-lettori {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+.salta { position: absolute; left: -9999px; top: 0; }
+.salta:focus { left: 8px; top: 8px; z-index: 100; background: var(--superficie); padding: 8px 12px; }
+
+/* ---------- Pulsanti ---------- */
+.pulsante, .voce-menu, .segmenti button, .giorni button {
+  min-height: 44px;              /* dimensione comoda da toccare */
+  padding: 8px 14px;
+  border: 1px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+.pulsante.primario { background: var(--primario); color: var(--primario-testo); border-color: var(--primario); }
+.pulsante.leggero { background: transparent; }
+.pulsante:disabled { opacity: .45; cursor: default; }
+select {
+  min-height: 44px; padding: 6px 10px; border: 1px solid var(--bordo);
+  border-radius: 10px; background: var(--superficie); max-width: 100%;
+}
+
+/* ---------- Caricamento: il robottino a pixel (vedi index.html) ---------- */
+/* Copre tutta la pagina con lo stesso blu dell'icona; quando l'app è pronta sfuma (classe "uscita") */
+.caricamento {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center; justify-content: center; padding: 16px; text-align: center;
+  background: linear-gradient(135deg, #2f6fe0, #153c8f); color: #fff;
+  transition: opacity .4s ease;
+}
+.caricamento[hidden] { display: none; }
+.caricamento.uscita { opacity: 0; pointer-events: none; }
+.robot-caricamento { width: min(46vw, 210px); height: auto; overflow: visible; }
+.testo-caricamento { margin: 0; font-size: 1.2rem; font-weight: 600; letter-spacing: .02em; }
+
+/* Il robot dondola su e giù, inclinandosi un poco (le misure sono in quadretti del disegno) */
+.robot-tutto { transform-box: view-box; transform-origin: 8px 16px; animation: robot-dondola 1.6s ease-in-out infinite; }
+@keyframes robot-dondola {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-.9px) rotate(3deg); }
+}
+/* L'ombra si stringe quando il robot sale */
+.robot-ombra { fill: rgba(0, 0, 0, .22); transform-box: fill-box; transform-origin: center; animation: robot-ombra 1.6s ease-in-out infinite; }
+@keyframes robot-ombra { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.75); opacity: .6; } }
+/* Sbatte le palpebre ogni tanto */
+.robot-occhi { transform-box: fill-box; transform-origin: center; animation: robot-sbatte 3.2s infinite; }
+@keyframes robot-sbatte { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.1); } }
+/* Le palline delle antenne pulsano */
+.robot-luce { transform-box: fill-box; transform-origin: center; animation: robot-luce .8s ease-in-out infinite alternate; }
+@keyframes robot-luce { from { transform: scale(.9); fill: #ffcf3f; } to { transform: scale(1.15); fill: #fff4c2; } }
+/* La lancetta dell'orologio gira intorno al centro del quadrante */
+.robot-lancetta { shape-rendering: geometricPrecision; transform-box: view-box; transform-origin: 7.5px 12.5px; animation: robot-gira 2s linear infinite; }
+@keyframes robot-gira { to { transform: rotate(360deg); } }
+/* I puntini di "Preparo l'orario..." si accendono uno dopo l'altro */
+.puntini span { animation: puntino 1.2s infinite; opacity: .2; }
+.puntini span:nth-child(2) { animation-delay: .2s; }
+.puntini span:nth-child(3) { animation-delay: .4s; }
+@keyframes puntino { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+/* Chi ha chiesto meno animazioni vede il robot fermo */
+@media (prefers-reduced-motion: reduce) {
+  .robot-tutto, .robot-ombra, .robot-occhi, .robot-luce, .robot-lancetta, .puntini span { animation: none; }
+  .puntini span { opacity: 1; }
+}
+
+/* ---------- Accesso ---------- */
+.accesso {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.scheda-accesso {
+  width: 100%; max-width: 380px; background: var(--superficie); border-radius: 18px;
+  box-shadow: var(--ombra); padding: 28px 22px; text-align: center;
+}
+.scheda-accesso h1 { margin: 8px 0 4px; font-size: 1.6rem; }
+.ricordami { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 18px 0; min-height: 44px; cursor: pointer; }
+.ricordami input { width: 22px; height: 22px; }
+.pulsante-google { display: flex; justify-content: center; min-height: 44px; }
+.modulo-demo { display: grid; gap: 10px; text-align: left; }
+.modulo-demo input { min-height: 44px; padding: 8px 12px; border: 1px solid var(--bordo); border-radius: 10px; background: var(--superficie); }
+.avviso-demo { background: var(--evidenza); border-left: 4px solid var(--evidenza-bordo); padding: 10px 12px; border-radius: 8px; margin: 0 0 4px; font-size: .9rem; }
+.errore { color: var(--errore); min-height: 1.4em; margin: 12px 0 0; }
+
+/* ---------- Barra in alto ---------- */
+.barra {
+  position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--superficie); border-bottom: 1px solid var(--bordo);
+}
+.marchio { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px; cursor: pointer; text-align: left; min-height: 44px; }
+.testo-marchio { display: flex; flex-direction: column; }
+.nome-app { font-weight: 700; font-size: 1.15rem; }
+.info-scuola { font-size: .8rem; color: var(--testo-tenue); }
+.titolo-monitor { display: none; }
+.azioni-barra { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.orologio { display: none; color: var(--testo-tenue); font-variant-numeric: tabular-nums; }
+.pulsante-utente {
+  width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--primario); color: var(--primario-testo); font-weight: 700;
+}
+.menu {
+  position: absolute; right: 16px; top: calc(100% + 4px); z-index: 20;
+  width: min(320px, calc(100vw - 32px)); display: grid; gap: 8px;
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18); padding: 14px;
+}
+/* Il riquadro del menu riceve il focus solo quando si apre: niente bordo, lo mostrano le singole voci */
+.menu:focus { outline: none; }
+.menu .utente { margin: 0 0 6px; word-break: break-all; }
+.menu .utente span { color: var(--testo-tenue); font-size: .9rem; }
+.menu label { font-size: .9rem; color: var(--testo-tenue); }
+.menu select { width: 100%; min-width: 0; }
+.voce-menu { text-align: left; }
+.menu hr { border: 0; border-top: 1px solid var(--bordo); margin: 4px 0; width: 100%; }
+.voce-menu.installa { font-weight: 600; color: var(--primario); }
+
+/* Finestra con le istruzioni per installare l'app */
+.finestra { max-width: min(420px, calc(100vw - 32px)); border: 1px solid var(--bordo); border-radius: 16px; padding: 20px; background: var(--superficie); color: var(--testo); }
+.finestra::backdrop { background: rgba(0, 0, 0, .45); }
+.finestra h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.finestra ol { padding-left: 1.2em; }
+.finestra .pulsante { width: 100%; margin-top: 8px; }
+/* Finestra "Condividi": il QR resta sempre nero su bianco, anche col tema scuro, per essere letto bene */
+.finestra-condividi { text-align: center; }
+.qr-app { display: block; width: min(320px, 70vw); height: auto; margin: 8px auto; background: #fff; padding: 8px; border-radius: 12px; }
+.indirizzo-app { font-size: .85rem; color: var(--testo-tenue); word-break: break-all; user-select: all; }
+.azioni-finestra { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.esito { min-height: 1.4em; margin: 6px 0 0; font-size: .9rem; }
+
+/* Finestra «Le mie 40+40» (js/quaranta-ore-TEST.js): più larga, con il dettaglio che scorre */
+.finestra-40ore { max-width: min(720px, calc(100vw - 24px)); max-height: calc(100vh - 32px); }
+.finestra-40ore table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: 8px 0; }
+.finestra-40ore caption { text-align: left; font-weight: 700; padding: 4px 0; }
+.finestra-40ore th, .finestra-40ore td { padding: 4px 6px; border-bottom: 1px solid var(--bordo); text-align: left; vertical-align: top; }
+.q40-riepilogo td { text-align: right; font-variant-numeric: tabular-nums; }
+.q40-dettaglio { font-size: .85rem; }
+.q40-dettaglio td:nth-child(4) { text-align: right; }
+.q40-passato td { color: var(--testo-tenue); }
+.q40-oltre { color: var(--errore); font-weight: 700; }
+.q40-esonero td { text-decoration: line-through; color: var(--testo-tenue); }
+.finestra-40ore [data-q40-excel] { width: auto; margin: 4px 8px 4px 0; }
+.q40-nota { font-size: .85rem; color: var(--testo-tenue); }
+body.modalita-monitor .qr-app { width: min(420px, 60vh); }
+a.voce-menu { display: flex; align-items: center; text-decoration: none; color: var(--primario); }
+.gruppo-menu { display: grid; gap: 6px; }
+
+/* ---------- Controlli ---------- */
+.controlli { padding: 10px 16px 0; display: grid; gap: 10px; }
+.riga-controlli { display: grid; gap: 10px; }
+.etichetta-controllo { display: block; font-size: .8rem; color: var(--testo-tenue); margin-bottom: 4px; }
+.segmenti { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.segmenti button { border-radius: 0; margin-left: -1px; padding: 8px 6px; }
+.segmenti button:first-child { border-radius: 10px 0 0 10px; margin-left: 0; }
+.segmenti button:last-child { border-radius: 0 10px 10px 0; }
+.segmenti button[aria-pressed="true"], .giorni button[aria-pressed="true"] {
+  background: var(--primario); color: var(--primario-testo); border-color: var(--primario); font-weight: 600;
+}
+.filtri { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+.filtri label { display: grid; gap: 4px; font-size: .8rem; color: var(--testo-tenue); min-width: 0; }
+.filtri select { color: var(--testo); width: 100%; }
+.giorni { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.giorni button { flex: 1 0 auto; position: relative; }
+.giorni button.e-oggi::after {       /* pallino sotto il giorno di oggi */
+  content: ""; position: absolute; left: 50%; bottom: 5px; width: 5px; height: 5px;
+  margin-left: -2.5px; border-radius: 50%; background: currentColor;
+}
+.giorno-lungo { display: none; }
+
+/* ---------- Contenuto ---------- */
+main#contenuto { padding: 10px 16px 16px; outline: none; }
+.avviso { background: var(--avviso); border-radius: 10px; padding: 10px 14px; margin: 0 0 10px; }
+.adesso {
+  display: grid; gap: 8px; margin-bottom: 10px;
+}
+.blocco-adesso, .blocco-dopo {
+  display: grid; gap: 2px; padding: 10px 14px; border-radius: 12px;
+  background: var(--superficie); box-shadow: var(--ombra);
+}
+.blocco-adesso { border-left: 5px solid var(--evidenza-bordo); background: var(--evidenza); }
+.etichetta { font-size: .8rem; color: var(--testo-tenue); }
+.valore { font-weight: 600; font-size: 1.05rem; }
+
+/* ---------- Tabella dell'orario ---------- */
+.contenitore-tabella {
+  /* position: relative tiene dentro il riquadro anche i testi nascosti per i lettori di schermo
+     (.solo-lettori): senza, "scappavano" e allargavano la pagina, che sui telefoni si rimpiccioliva */
+  position: relative;
+  overflow: auto; max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px);
+  background: var(--superficie); border: 1px solid var(--bordo); border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.tabella-orario { border-collapse: separate; border-spacing: 0; width: 100%; }
+.tabella-orario caption {
+  caption-side: top; text-align: left; font-weight: 600; padding: 10px 12px;
+  position: sticky; left: 0;
+}
+.tabella-orario th, .tabella-orario td {
+  border-bottom: 1px solid var(--bordo); border-right: 1px solid var(--bordo);
+  padding: 4px; vertical-align: top;
+}
+.tabella-orario td { min-width: 118px; }
+.tabella-orario[data-colonne="1"] td { min-width: 0; width: 100%; }
+.tabella-orario thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--superficie);
+  font-size: .9rem; padding: 8px 6px; white-space: nowrap;
+}
+.tabella-orario tbody th {       /* colonna delle ore, sempre visibile */
+  position: sticky; left: 0; z-index: 1; background: var(--superficie);
+  text-align: left; white-space: nowrap; width: 1%; padding: 6px 8px;
+}
+.tabella-orario thead th.angolo { left: 0; z-index: 3; }
+.num-ora { display: block; font-weight: 700; font-size: 1.05rem; }
+.orario-ora { display: block; font-size: .72rem; color: var(--testo-tenue); font-variant-numeric: tabular-nums; }
+.etichetta-oggi { font-size: .7rem; font-weight: 400; color: var(--testo-tenue); }
+
+/* Ora in corso evidenziata */
+.ora-corrente th, .ora-corrente td, .cella-corrente { background: var(--evidenza) !important; }
+.ora-corrente th { box-shadow: inset 5px 0 0 var(--evidenza-bordo); }
+.col-oggi { box-shadow: inset 0 -3px 0 var(--primario); }
+
+/* Singola lezione: colore di sfondo in base alla materia */
+.lezione {
+  display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px;
+  background: hsl(var(--tinta) var(--lezione-s) var(--lezione-l));
+  border-left: 4px solid hsl(var(--tinta) 60% var(--lezione-bordo-l));
+}
+.lezione + .lezione { margin-top: 4px; }
+.materia { font-size: .92rem; line-height: 1.2; }
+.dato { font-size: .8rem; color: var(--testo-tenue); line-height: 1.25; }
+.dato-aula::before { content: "📍 "; content: "📍 " / ""; }  /* la puntina non viene letta ad alta voce */
+
+.piede { padding: 0 16px 20px; padding-bottom: max(20px, env(safe-area-inset-bottom)); font-size: .8rem; color: var(--testo-tenue); }
+
+/* ---------- Schermi più larghi (tablet, PC) ---------- */
+@media (min-width: 700px) {
+  .filtri { grid-template-columns: repeat(3, minmax(120px, 1fr)) auto auto; }
+  .giorno-lungo { display: inline; }
+  .giorno-corto { display: none; }
+  .giorni button { flex: 0 1 140px; }
+  .orologio { display: inline; }
+  .adesso { grid-template-columns: 1fr 1fr; }
+  .contenitore-tabella { max-height: none; }
+  .tabella-orario td { min-width: 130px; }
+}
+
+/* Schermi larghi: pulsanti e filtri sulla stessa riga */
+@media (min-width: 1000px) {
+  .riga-controlli { grid-template-columns: auto 1fr; align-items: end; gap: 16px; }
+}
+
+/* ---------- Modalità monitor di classe: tutto più grande ---------- */
+body.modalita-monitor { font-size: 20px; }
+body.modalita-monitor .titolo-monitor {
+  display: block; font-size: 1.6rem; font-weight: 700; flex: 1; text-align: center;
+}
+body.modalita-monitor .orologio { display: inline; font-size: 1.3rem; font-weight: 600; color: var(--testo); }
+body.modalita-monitor .info-scuola { display: none; }
+body.modalita-monitor .valore { font-size: 1.5rem; }
+body.modalita-monitor .materia { font-size: 1.15rem; }
+body.modalita-monitor .dato { font-size: 1rem; }
+body.modalita-monitor .num-ora { font-size: 1.3rem; }
+body.modalita-monitor .orario-ora { font-size: .9rem; }
+body.modalita-monitor .contenitore-tabella { max-height: none; }
+
+/* ---------- Schermo all'ingresso: viste a rotazione (vedi js/ingresso-TEST.js) ---------- */
+body.modalita-ingresso { font-size: 20px; }
+body.modalita-ingresso .titolo-monitor {
+  display: block; font-size: 1.6rem; font-weight: 700; flex: 1; text-align: center;
+}
+body.modalita-ingresso .orologio { display: inline; font-size: 1.3rem; font-weight: 600; color: var(--testo); }
+body.modalita-ingresso .info-scuola { display: none; }
+body.modalita-ingresso .materia { font-size: 1.1rem; }
+body.modalita-ingresso .dato { font-size: .95rem; }
+body.modalita-ingresso .num-ora { font-size: 1.3rem; }
+body.modalita-ingresso .orario-ora { font-size: .9rem; }
+body.modalita-ingresso .tabella-orario caption { font-size: 1.3rem; }
+/* Mentre ruota nessuno usa i controlli: li nascondiamo (tornano con un tocco) */
+body.modalita-ingresso:not(.ingresso-in-pausa) .controlli,
+body.modalita-ingresso:not(.ingresso-in-pausa) .pulsante-breve,
+body.modalita-ingresso:not(.ingresso-in-pausa) #btnOggi,
+body.modalita-ingresso:not(.ingresso-in-pausa) #btnNomi,
+body.modalita-ingresso:not(.ingresso-in-pausa) #btnMioOrario { display: none; }
+/* Sotto i 960 px nella barra non c'è posto per «Nomi» (con «Il mio orario» andrebbe a capo): resta la voce nel menu utente */
+@media (max-width: 959px) { #btnNomi { display: none; } }
+/* Le colonne della pagina si dividono lo schermo in parti uguali: niente da scorrere */
+body.modalita-ingresso:not(.ingresso-in-pausa) .contenitore-tabella { max-height: none; overflow: hidden; }
+body.modalita-ingresso:not(.ingresso-in-pausa) .tabella-orario { table-layout: fixed; }
+body.modalita-ingresso:not(.ingresso-in-pausa) .tabella-orario td { min-width: 0; }
+body.modalita-ingresso:not(.ingresso-in-pausa) .tabella-orario thead th { white-space: normal; }
+body.modalita-ingresso:not(.ingresso-in-pausa) .tabella-orario thead th.angolo { width: 110px; }
+
+/* Campo del menu per scegliere ogni quanti secondi cambia la vista: − [ 20 ] secondi + */
+.campo-secondi { display: flex; align-items: center; gap: 6px; }
+.campo-secondi input {
+  width: 5.5em; min-height: 40px; padding: 6px 8px; text-align: center; font: inherit;
+  border: 1px solid var(--bordo); border-radius: 8px; background: var(--superficie); color: var(--testo);
+}
+.campo-secondi .pulsante { min-width: 40px; justify-content: center; font-size: 1.2rem; }
+.esito-secondi { margin: 0; font-size: .85rem; color: var(--testo-tenue); }
+.esito-secondi:empty { display: none; }
+.esito-secondi.errore-secondi { color: var(--errore); }
+
+.indicatore-ingresso {
+  position: relative; display: flex; align-items: center; gap: 16px;
+  margin-bottom: 10px; padding-bottom: 8px; font-weight: 700; font-size: 1.2rem;
+}
+.ingresso-punti { display: flex; gap: 8px; }
+.ingresso-punti span { width: 12px; height: 12px; border-radius: 50%; background: var(--bordo); }
+.ingresso-punti span.attivo { background: var(--primario); }
+/* Barretta che si riempie mentre passano i secondi della vista */
+.ingresso-barra {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 2px;
+  background: var(--primario); transform-origin: left;
+  animation-name: riempi-barra; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes riempi-barra { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .ingresso-barra { display: none; } }
+
+/* ---------- Modifiche dell'ultimo minuto (vedi js/modifiche-TEST.js) ---------- */
+.modifiche {
+  margin: 10px 16px 0; padding: 12px 16px; border-radius: 12px;
+  background: var(--evidenza); border: 2px solid var(--evidenza-bordo); color: var(--testo);
+}
+.modifiche-testa { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.modifiche-testa h2 { margin: 0; font-size: 1.15rem; }
+.modifiche-elenco { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; }
+.mod-dove { font-weight: 700; }
+.mod-prima { color: var(--testo-tenue); }
+.mod-tipo {
+  display: inline-block; font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  background: var(--superficie); border: 1px solid var(--evidenza-bordo);
+}
+.mod-riguarda { background: var(--evidenza-bordo); color: #1a1f2b; }
+.mod-tua { font-weight: 600; }
+/* Nella tabella: la lezione cambiata ha un bordo evidente e l'etichetta "Cambiata" */
+.lezione-modificata { outline: 3px solid var(--evidenza-bordo); outline-offset: -1px; }
+.etichetta-modificata {
+  justify-self: start; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 0 6px; border-radius: 4px; background: var(--evidenza-bordo); color: #1a1f2b;
+}
+body.modalita-monitor .modifiche, body.modalita-ingresso .modifiche { font-size: 1.1em; }
+/* Sostituzioni della settimana (js/supplenze-TEST.js): cornice spessa ed etichetta ben visibili.
+   Arancione = il docente assente è sostituito; rosso = manca ancora il sostituto */
+.lezione-supplenza { outline: 1px solid var(--sost-bordo); outline-offset: -1px; }
+.lezione-scoperta { outline: 1px dashed var(--errore); outline-offset: -1px; }
+.etichetta-sost {
+  justify-self: start; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 0 6px; border-radius: 4px; background: var(--sost-bordo); color: #fff;
+}
+.lezione-scoperta .etichetta-sost { background: var(--errore); color: var(--su-errore); }
+.dato-sost { font-size: .8rem; line-height: 1.25; font-weight: 600; }
+/* Classe in uscita didattica (sostituzioni/js/uscite-TEST.js): lezione non svolta, cornice e colori spenti */
+.lezione-uscita { outline: 1px dotted var(--testo-tenue, #888); outline-offset: -1px; opacity: .75; }
+.lezione-uscita .etichetta-sost { background: #4b5563; color: #fff; }
+/* Sciopero / assemblea (sostituzioni/js/scioperi-TEST.js, solo quello che pubblica Orario Facile):
+   ora in cui la classe non c'è (non entra, entra dopo, esce prima) = «spenta» in grigio, senza etichetta, come un'ora
+   senza lezione (materia e docente restano scritti in grigio); vigilanza = classe «cerchiata» */
+.lezione-spenta { background: hsl(0 0% 50% / .12); border-left-color: hsl(0 0% 50% / .45); }
+.lezione-spenta, .lezione-spenta .materia, .lezione-spenta .dato { color: var(--testo-tenue, #888); }
+.lezione-sciopero-fuori { outline: 1px dashed var(--testo-tenue, #888); outline-offset: -1px; opacity: .7; }
+.lezione-sciopero-fuori .etichetta-sost { background: #6b7280; color: #fff; }
+.lezione-vigilanza { outline: 2px solid #b45309; outline-offset: -2px; border-radius: 999px / 40%; }
+.lezione-vigilanza .etichetta-sost { background: #b45309; color: #fff; }
+/* «✕ Annulla» su una sostituzione (solo per chi può fare le sostituzioni, vedi viste-TEST.js): piccolo, bordo rosso */
+.annulla-sost {
+  justify-self: start; margin-top: 2px; padding: 2px 8px; min-height: 28px; font: inherit; font-size: .72rem; font-weight: 700;
+  border: 1px solid var(--errore); border-radius: 6px; background: var(--superficie, transparent); color: var(--errore); cursor: pointer;
+}
+.annulla-sost:hover, .annulla-sost:focus-visible { background: var(--errore); color: var(--su-errore); }
+/* Il nome del docente assente, nella riga del docente, viene barrato */
+.lezione-supplenza:not(.lezione-copia) .dato-docente, .lezione-scoperta .dato-docente { text-decoration: line-through; }
+/* Cambio d'aula della settimana: cornice tratteggiata blu, etichetta, e l'aula vecchia barrata nella riga dell'aula */
+.lezione-cambio-aula { outline: 3px dashed var(--primario); outline-offset: -1px; }
+.lezione-supplenza.lezione-cambio-aula, .lezione-scoperta.lezione-cambio-aula { outline-style: double; }
+.etichetta-cambio {
+  justify-self: start; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 0 6px; border-radius: 4px; background: var(--primario); color: var(--primario-testo);
+}
+.dato-cambio { font-size: .8rem; line-height: 1.25; font-weight: 600; }
+/* Ora di compresenza (secondo docente in classe): sfondo più chiaro, cornice tratteggiata sottile ed etichetta */
+.lezione-compresenza { outline: 1px dashed hsl(var(--tinta) 45% 45%); outline-offset: -1px; opacity: .92; }
+.etichetta-compresenza {
+  justify-self: start; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; color: var(--testo-tenue);
+}
+/* Compresenze nella cella del titolare (viste-TEST.js): una riga sottile ciascuna, «＋ docente · tipo», invece di una scheda
+   intera. Se il testo non ci sta finisce con «…» (il testo intero è nel suggerimento e per i lettori di schermo) */
+.compresenze-compatte { display: grid; gap: 3px; margin-top: 3px; }
+.compresenze-compatte .lezione { margin-top: 0; min-width: 0; }
+.lezione-compatta { padding: 2px 6px; border-left-width: 3px; border-radius: 6px; gap: 0; }
+.riga-compatta { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .76rem; line-height: 1.35; }
+.riga-compatta .dato { display: inline; font-size: inherit; color: var(--testo); font-weight: 600; }
+.riga-compatta .dato + .dato::before { content: " · "; content: " · " / ""; color: var(--testo-tenue); font-weight: 400; }
+.riga-compatta .dato-aula::before, .riga-compatta .dato + .dato-aula::before { content: " 📍"; content: " 📍" / ""; }
+.riga-compatta .link-piantina { padding: 0; min-height: 0; }
+.tipo-compatta { color: var(--testo-tenue); }
+.lezione-compatta { cursor: pointer; }
+.lezione-compatta:focus-visible { outline: 2px solid var(--primario); outline-offset: 1px; }
+.lezione-compatta.aperta .riga-compatta { white-space: normal; }   /* toccata: si vede il testo intero */
+@media print { .riga-compatta { white-space: normal; } }
+/* Quadratino «Compresenze» e collegamento «✎ Modifica» (scheda Compresenze di Orario Facile) sulla stessa riga */
+.gruppo-compresenze { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gruppo-compresenze a.pulsante { display: inline-flex; align-items: center; color: var(--testo); text-decoration: none; }
+/* Quadratino «Compresenze» accanto ai filtri */
+.filtri .spunta-compresenze { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--testo); min-height: 44px; cursor: pointer; }
+.spunta-compresenze input { width: 20px; height: 20px; margin: 0; accent-color: var(--primario); }
+.lezione-cambio-aula .dato-aula { text-decoration: line-through; }
+/* Quando tutte le storie sono state viste il riquadro diventa discreto (restano i cerchi grigi) */
+.modifiche.tutte-viste { background: var(--superficie); border-color: var(--bordo); }
+.modifiche.tutte-viste h2 { font-size: 1rem; color: var(--testo-tenue); }
+.modifiche-dettagli summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+/* Modalità prova (?provastorie): avviso ben visibile che le modifiche sono finte */
+.modifiche-prova { margin: 0 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--superficie); font-size: .9rem; }
+.storia-prova {
+  margin: 0; padding: 4px 12px; border-radius: 999px; background: rgba(255, 255, 255, .2);
+  font-weight: 700; font-size: .9rem;
+}
+
+/* ---------- Modifiche in stile storie (vedi js/storie-TEST.js) ---------- */
+/* Fila di cerchi: scorre di lato se sono tanti */
+.storie-fila { list-style: none; display: flex; gap: 14px; margin: 10px 0 4px; padding: 2px 2px 6px; overflow-x: auto; }
+.storia-cerchio {
+  display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: none;
+  color: var(--testo); font: inherit; cursor: pointer; min-width: 64px;
+}
+/* Anello colorato (da vedere) come nelle storie di Instagram */
+.storia-anello {
+  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; padding: 3px;
+  background: conic-gradient(from 200deg, #f58529, #dd2a7b, #8134af, #515bd4, #f58529);
+}
+.storia-cerchio.tua .storia-anello { background: conic-gradient(from 200deg, #d9a300, #ff6b00, #d9a300); }
+.storia-cerchio.vista .storia-anello { background: var(--bordo); }
+.storia-interno {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
+  background: var(--superficie); border: 3px solid var(--superficie);
+  font-weight: 800; font-size: 1.15rem;
+}
+.storia-nome { font-size: .8rem; font-weight: 600; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.storia-cerchio.vista .storia-nome { color: var(--testo-tenue); font-weight: 400; }
+.storia-cerchio:focus-visible .storia-anello { outline: 3px solid var(--primario); outline-offset: 2px; }
+
+/* Visualizzatore a tutto schermo: sempre scuro, come nelle app di storie */
+body.storie-aperte { overflow: hidden; }
+.visore-storie {
+  position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 30% 20%, #3b2a6b, #10131c 70%); color: #fff;
+}
+.visore-storie[hidden] { display: none; }
+.visore-storie.storia-tua { background: radial-gradient(circle at 30% 20%, #6b4a00, #10131c 70%); }
+.storie-barre { display: flex; gap: 4px; }
+.storie-barra { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .3); overflow: hidden; }
+.storie-barra.piena { background: #fff; }
+.storie-riempimento {
+  display: block; height: 100%; background: #fff; transform-origin: left;
+  animation-name: riempi-barra; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+.visore-storie.in-pausa .storie-riempimento { animation-play-state: paused; }
+.storie-testa { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.storie-conteggio { flex: 1; font-weight: 600; font-size: .95rem; }
+.storie-pulsante {
+  width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .15);
+  color: #fff; font-size: 1.2rem; cursor: pointer;
+}
+.storie-pulsante:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.storia-contenuto {
+  flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 10px; text-align: center; padding: 16px 8px; pointer-events: none;
+}
+.storia-quando { margin: 0; font-size: 1.1rem; opacity: .85; text-transform: uppercase; letter-spacing: .06em; }
+.storia-classe { margin: 0; font-size: clamp(3rem, 14vw, 6rem); font-weight: 800; line-height: 1; }
+.storia-etichetta { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; opacity: .75; margin-bottom: 2px; }
+.storia-prima { font-size: 1.1rem; opacity: .8; }
+.storia-freccia { margin: 0; font-size: 2rem; }
+.storia-dopo { display: grid; gap: 10px; padding: 16px 22px; border-radius: 20px; background: rgba(255, 255, 255, .12); }
+.storia-lezione { display: grid; gap: 2px; font-size: 1.15rem; }
+.storia-materia { font-size: clamp(1.8rem, 8vw, 3rem); line-height: 1.1; }
+.storia-aula { font-size: clamp(1.4rem, 6vw, 2.2rem); font-weight: 800; color: #ffd166; }
+.storia-riguarda {
+  margin: 4px 0 0; padding: 4px 14px; border-radius: 999px; background: #ffd166; color: #1a1f2b; font-weight: 800;
+}
+/* Metà sinistra = indietro, metà destra = avanti (sotto la testata) */
+.storie-zona { position: absolute; top: 80px; bottom: 0; width: 50%; border: 0; background: none; cursor: pointer; z-index: 1; }
+.storie-zona.indietro { left: 0; }
+.storie-zona.avanti { right: 0; }
+.storie-zona:focus-visible { outline: 3px solid rgba(255, 255, 255, .6); outline-offset: -6px; }
+@media (min-width: 700px) { .modifiche { margin: 12px 16px 0; } }
+
+/* ---------- LIM: schermata dell'intervallo (vedi js/intervallo-TEST.js) ---------- */
+.schermata-intervallo {
+  position: fixed; inset: 0; z-index: 50; overflow: auto;
+  display: grid; place-items: center; padding: 24px;
+  background: var(--sfondo);
+}
+.schermata-intervallo[hidden] { display: none; }
+body.intervallo-aperto { overflow: hidden; }
+.intervallo-scheda { width: min(1100px, 100%); text-align: center; }
+.intervallo-etichetta { font-size: 1.6rem; color: var(--testo-tenue); margin: 0 0 8px; }
+.intervallo-scheda h2 { font-size: clamp(2rem, 5vw, 3.6rem); margin: 0 0 24px; }
+.intervallo-classi { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 16px; }
+.intervallo-classi li {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 24px;
+  padding: 20px 28px; border-radius: 20px; text-align: left;
+  background: var(--superficie); box-shadow: var(--ombra);
+}
+.intervallo-classe { font-size: clamp(2.4rem, 6vw, 4.5rem); font-weight: 800; }
+.intervallo-freccia { font-size: clamp(2rem, 5vw, 3.5rem); color: var(--testo-tenue); }
+.intervallo-dove { display: grid; gap: 4px; }
+.intervallo-aula { font-size: clamp(2.2rem, 5.5vw, 4rem); font-weight: 800; color: var(--primario); line-height: 1.1; }
+.intervallo-aula.resta { color: var(--testo); }
+.intervallo-materia { font-size: clamp(1.1rem, 2.4vw, 1.8rem); color: var(--testo-tenue); }
+.intervallo-arrivo { font-size: clamp(1.2rem, 2.6vw, 2rem); margin: 0 0 24px; }
+.schermata-intervallo .pulsante { font-size: 1.2rem; padding: 10px 28px; }
+
+/* ---------- Stampa ---------- */
+@media print {
+  .annulla-sost { display: none; }
+  .barra, .controlli, .adesso, .piede, .salta { display: none !important; }
+  .contenitore-tabella { overflow: visible; max-height: none; border: 0; }
+  .tabella-orario thead th, .tabella-orario tbody th { position: static; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

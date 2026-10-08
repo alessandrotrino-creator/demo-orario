@@ -1,0 +1,269 @@
+/*
+  supplenze-TEST.js – mostra nella tabella dell'orario le assenze e le sostituzioni della settimana.
+
+  Le assenze e le sostituzioni si registrano nella scheda Sostituzioni di Orario Facile o nella pagina
+  «Sostituzioni smart» e restano nella memoria di questo dispositivo (chiavi "sostituzioni.assenze" e
+  "sostituzioni.registro", vedi sostituzioni/js/archivio-TEST.js). Qui le rileggiamo e prepariamo:
+  - segnate: le lezioni dei docenti assenti, con il nome di chi le sostituisce (o "da coprire");
+  - extra:   le stesse lezioni "copiate" al docente che sostituisce, così compaiono anche nel suo orario.
+  La settimana considerata è quella in corso (di sabato e domenica si guarda già la prossima).
+
+  Sostituzioni pubblicate: con il tasto «Pubblica sostituzioni» di Orario Facile le assenze e le sostituzioni
+  vanno in un file su Google Drive (CONFIG.fileSostituzioniPubblicate), che scarica() legge per tutti i dispositivi.
+  Si mostrano quelle pubblicate UNITE a quelle registrate su questo dispositivo (vincono quelle di qui).
+  Allo stesso modo i cambi d'aula (chiave "sostituzioni.cambiAula", sostituzioni/js/cambi-aula-TEST.js): cambi = Map
+  "giorno|ora|classe" -> { da, a }, letti con cambioAula().
+*/
+const Supplenze = (() => {
+  const NOMI_GIORNI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+  const CHIAVE_COPIA = 'orariodada.copiaSostituzioni';   // ultima copia delle sostituzioni pubblicate (senza rete)
+
+  const leggi = k => { try { return JSON.parse(localStorage.getItem(k) || '[]') || []; } catch (e) { return []; } };
+
+  // Le sostituzioni pubblicate su Drive: { assenze: [], registro: [] } oppure null (non configurate o mai scaricate)
+  let pubblicate = null;
+  const elenchi = o => ({ assenze: Array.isArray(o && o.assenze) ? o.assenze : [], registro: Array.isArray(o && o.registro) ? o.registro : [],
+    cambi: Array.isArray(o && o.cambi) ? o.cambi : [], annullate: Array.isArray(o && o.annullate) ? o.annullate : [],
+    uscite: Array.isArray(o && o.uscite) ? o.uscite : [], scioperi: Array.isArray(o && o.scioperi) ? o.scioperi : [],
+    assenzeAnnullate: Array.isArray(o && o.assenzeAnnullate) ? o.assenzeAnnullate : [] });
+  // Come si riconosce la stessa voce anche senza ID (pubblicata con una versione vecchia)
+  const SEGNO = { assenze: a => a.data + '|' + a.docente, registro: s => s.data + '|' + s.ora + '|' + s.classe, cambi: c => c.data + '|' + c.ora + '|' + c.classe,
+    uscite: u => u.data + '|' + (u.classi || []).join(','), scioperi: e => e.data };
+  // Gli scioperi di questo dispositivo nella stessa forma di quelli pubblicati (solo i confermati, solo gli effetti sulle classi)
+  const scioperiLocali = () => leggi('sostituzioni.scioperi').filter(e => e.confermato && e.esito)
+    .map(e => ({ id: e.id, data: e.data, tipo: e.tipo, riduzione: e.esito.riduzione, classi: e.esito.classi }));
+  /*
+    Unisce le voci pubblicate (di tutti i dispositivi) con quelle di questo dispositivo: vincono quelle di qui, e
+    spariscono quelle che questo dispositivo aveva pubblicato e poi annullato (ID in "sostituzioni.pubblicateDaQui").
+    Spariscono anche le sostituzioni annullate da un altro dispositivo (elenco "annullate" del file pubblicato) o da qui
+    con il tasto «✕ Annulla» della tabella (chiave "sostituzioni.annullate"), vedi app/js/pubblica-sostituzioni-TEST.js.
+    Allo stesso modo spariscono le assenze tolte da un altro dispositivo o da qui ("assenzeAnnullate").
+  */
+  function unisci(pub, loc) {
+    const daQui = new Set(leggi('sostituzioni.pubblicateDaQui'));
+    const out = {};
+    Object.keys(SEGNO).forEach(k => {
+      const L = loc[k], id = new Set(L.map(x => x.id)), segni = new Set(L.map(SEGNO[k]));
+      out[k] = (pub ? pub[k] : []).filter(x => !(x.id && (id.has(x.id) || daQui.has(x.id))) && !segni.has(SEGNO[k](x))).concat(L);
+    });
+    const annullate = (pub ? pub.annullate : []).concat(loc.annullate || []);
+    if (annullate.length && typeof PubblicaSostituzioni !== 'undefined') {
+      const colpisce = PubblicaSostituzioni.colpita(annullate);
+      out.registro = out.registro.filter(s => !colpisce(s));
+    }
+    const assenzeAnnullate = (pub ? pub.assenzeAnnullate : []).concat(loc.assenzeAnnullate || []);
+    if (assenzeAnnullate.length && typeof PubblicaSostituzioni !== 'undefined') {
+      const colpisce = PubblicaSostituzioni.assenzaColpita(assenzeAnnullate);
+      out.assenze = out.assenze.filter(a => !colpisce(a));
+      // anche le sostituzioni di quelle assenze (chi l'ha tolta le ha già annullate, ma può non averle viste tutte),
+      // purché quel giorno il docente non sia ancora assente per un'assenza nuova
+      const tolta = new Set(assenzeAnnullate.map(a => a.data + '|' + a.docente));
+      const resta = new Set(out.assenze.map(a => a.data + '|' + a.docente));
+      out.registro = out.registro.filter(s => !tolta.has(s.data + '|' + s.assente) || resta.has(s.data + '|' + s.assente));
+    }
+    return out;
+  }
+
+  // Scarica le sostituzioni pubblicate; restituisce true se sono cambiate (non lancia mai errori)
+  async function scarica() {
+    // con la chiave API o con il permesso Google di chi ha fatto l'accesso (vedi Dati.leggiDrive)
+    // DEMO ONLINE: senza Drive le sostituzioni pubblicate si leggono dal file del sito (CONFIG.urlSostituzioni)
+    const daDrive = typeof Dati !== 'undefined' && Dati.driveLeggibile(CONFIG.fileSostituzioniPubblicate);
+    if (typeof Dati === 'undefined' || (!daDrive && !CONFIG.urlSostituzioni)) return false;
+    const prima = JSON.stringify(pubblicate);
+    try {
+      const testo = daDrive ? await Dati.leggiDrive(CONFIG.fileSostituzioniPubblicate)
+        : await fetch(CONFIG.urlSostituzioni, { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error('errore ' + r.status); return r.text(); });
+      pubblicate = elenchi(JSON.parse(testo));
+      try { localStorage.setItem(CHIAVE_COPIA, testo); } catch (e) { /* spazio pieno o bloccato: pazienza */ }
+      // sostituzioni di questo dispositivo annullate da qualcun altro: spariscono anche dal registro di qui
+      // (e così le assenze di qui tolte da qualcun altro)
+      if (typeof PubblicaSostituzioni !== 'undefined') PubblicaSostituzioni.applicaAnnullate(pubblicate.annullate, pubblicate.assenzeAnnullate);
+    } catch (e) {
+      // senza rete: l'ultima copia salvata su questo dispositivo
+      if (!pubblicate) { try { const c = localStorage.getItem(CHIAVE_COPIA); if (c) pubblicate = elenchi(JSON.parse(c)); } catch (x) { /* ignorato */ } }
+    }
+    return JSON.stringify(pubblicate) !== prima;
+  }
+  // "Lunedì" -> "lunedi": per confrontare i nomi dei giorni senza badare ad accenti e maiuscole
+  const semplice = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const isoLocale = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // Il lunedì della settimana da mostrare: questa settimana, oppure la prossima se oggi è sabato o domenica
+  function lunedi() {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+    else if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+    else d.setDate(d.getDate() - (d.getDay() - 1));
+    return d;
+  }
+
+  // Le date dei giorni di scuola della settimana: Map "Lunedì" -> "2026-09-28"
+  function dateSettimana(D) {
+    const date = new Map();
+    const d = lunedi();
+    for (let i = 0; i < 7; i++) {
+      const giorno = D.giorni.find(g => semplice(g) === semplice(NOMI_GIORNI[d.getDay()]));
+      if (giorno) date.set(giorno, isoLocale(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return date;
+  }
+
+  // La "casella" di una lezione: giorno, ora, classe e docente
+  const chiave = (giorno, ora, classe, docente) => [giorno, ora, classe, docente].join('|');
+
+  /*
+    Assenze e sostituzioni della settimana per l'orario D.
+    Restituisce { segnate: Map chiave -> { assente, sostituto, voce }, extra: [lezioni del sostituto], date }.
+  */
+  function settimana(D) {
+    const date = dateSettimana(D);
+    const giornoDi = new Map([...date].map(([g, iso]) => [iso, g]));   // "2026-09-28" -> "Lunedì"
+    const segnate = new Map();
+    const extra = [];
+
+    // Le voci pubblicate (di tutti) unite a quelle registrate su questo dispositivo
+    const locali = { assenze: leggi('sostituzioni.assenze'), registro: leggi('sostituzioni.registro'), cambi: leggi('sostituzioni.cambiAula'),
+      annullate: leggi('sostituzioni.annullate'), uscite: leggi('sostituzioni.uscite').filter(u => u.confermata !== false), scioperi: scioperiLocali(), assenzeAnnullate: leggi('sostituzioni.assenzeAnnullate') };
+    const fonte = unisci(pubblicate, locali);
+
+    // 0. le uscite didattiche (sostituzioni/js/uscite-TEST.js): "giorno|ora|classe" delle classi fuori
+    const fuori = new Set();
+    fonte.uscite.forEach(u => {
+      const giorno = giornoDi.get(u.data);
+      if (giorno && Array.isArray(u.classi) && Array.isArray(u.ore)) u.classi.forEach(c => u.ore.forEach(h => fuori.add([giorno, h, c].join('|'))));
+    });
+    const eFuori = l => fuori.has([l.giorno, l.ora, l.classe].join('|'));
+    D.lezioni.filter(eFuori).forEach(l => segnate.set(chiave(l.giorno, l.ora, l.classe, l.docente), { uscita: true, assente: '', sostituto: '' }));
+
+    // 1. le lezioni dei docenti assenti (per ora senza sostituto: "da coprire"); non quelle delle classi fuori
+    //    assenza = l'assenza così com'è registrata: serve al tasto «✕ Togli assenza» della tabella
+    fonte.assenze.forEach(a => {
+      const giorno = giornoDi.get(a.data);
+      if (!giorno || !Array.isArray(a.ore)) return;
+      const assenza = { id: a.id || '', data: a.data, docente: a.docente, ore: a.ore };
+      D.lezioni.filter(l => l.giorno === giorno && l.docente === a.docente && a.ore.includes(l.ora) && !eFuori(l))
+        .forEach(l => segnate.set(chiave(giorno, l.ora, l.classe, l.docente), { assente: l.docente, sostituto: '', assenza }));
+    });
+
+    // 2. le sostituzioni assegnate: chi sostituisce, e la lezione in più nel suo orario
+    //    (non le vigilanze di uno sciopero: si mostrano al punto 4, senza dire chi sciopera)
+    fonte.registro.forEach(s => {
+      const giorno = giornoDi.get(s.data);
+      if (s.sciopero || !giorno || !D.mappa.docente.has(s.sostituto)) return;
+      const l = D.lezioni.find(x => x.giorno === giorno && x.ora === s.ora && x.classe === s.classe && x.docente === s.assente);
+      if (!l) return;   // l'orario è cambiato e quella lezione non c'è più
+      // voce = la sostituzione così com'è registrata: serve al tasto «✕ Annulla» della tabella
+      segnate.set(chiave(giorno, l.ora, l.classe, l.docente), { assente: s.assente, sostituto: s.sostituto, voce: s });
+      extra.push(Object.assign({}, l, { docente: s.sostituto, sostituzione: true, assente: s.assente, voce: s }));
+    });
+
+    // 2b. il sostituto SPOSTATO da una classe in compresenza (campo spostato: { da }, issue #7): nella classe lasciata
+    //     la sua lezione sparisce (nascoste) e, se se n'è andato il docente di cattedra, al suo posto c'è un'ora della
+    //     stessa materia tenuta dal solo docente di sostegno (alPosto), come una lezione normale. Il sostegno si vede
+    //     solo da chi lo può vedere (Compresenze.lezioni: docenti e chi modifica); gli altri vedono la materia senza docente.
+    const nascoste = new Set(), alPosto = [];
+    const conComp = typeof Compresenze !== 'undefined' ? Compresenze.lezioni(D) : [];
+    const curr = (D.lezioniCurricolari || D.lezioni).filter(l => !l.compresenza);
+    fonte.registro.forEach(s => {
+      const giorno = giornoDi.get(s.data);
+      if (s.sciopero || !giorno || !s.spostato || !s.spostato.da) return;
+      const da = s.spostato.da;
+      nascoste.add(chiave(giorno, s.ora, da, s.sostituto));
+      const sua = curr.find(x => x.giorno === giorno && x.ora === s.ora && x.classe === da && x.docente === s.sostituto);
+      if (!sua) return;   // era un compresente (potenziamento, Alternativa…): in classe resta il docente di cattedra
+      const sostegno = conComp.filter(x => x.giorno === giorno && x.ora === s.ora && x.classe === da && /^sos/i.test(x.materia || ''));
+      sostegno.forEach(x => nascoste.add(chiave(giorno, s.ora, da, x.docente)));
+      (sostegno.length ? sostegno : [{ docente: '' }]).forEach(x => alPosto.push(Object.assign({}, sua, { docente: x.docente })));
+    });
+
+    // 3. i cambi d'aula: Map "giorno|ora|classe" -> { da, a } (aule, per ID)
+    const cambi = new Map();
+    fonte.cambi.forEach(c => {
+      const giorno = giornoDi.get(c.data);
+      if (giorno && c.a) cambi.set([giorno, c.ora, c.classe].join('|'), { da: c.da || '', a: c.a });
+    });
+
+    // 4. scioperi e assemblee sindacali (sostituzioni/js/scioperi-TEST.js): per ogni classe entrata posticipata, uscita
+    //    anticipata e vigilanza (con chi vigila, che la vede anche nel suo orario). Mai chi sciopera.
+    //    Se il piano è stato fatto su un Orario Facile con un orario caricato a parte, i codici interni (ID) di classi e
+    //    docenti possono essere diversi da quelli dell'app: allora si riconoscono dal nome della classe («2B») e dal
+    //    codice del docente («DOC07»), che il piano pubblica insieme agli ID (nomeClasse, nomeDa, codice).
+    const perNomeClasse = new Map(D.classe.map(c => [semplice(c.nome), c.id]));
+    const perCodice = new Map(D.docente.map(d => [semplice(d.codice || d.nome), d.id]));
+    const idClasse = (id, nome) => (id && D.mappa.classe.has(id)) ? id : (nome && perNomeClasse.get(semplice(nome))) || id;
+    const idDocente = (id, codice) => (id && D.mappa.docente.has(id)) ? id : (codice && perCodice.get(semplice(codice))) || id;
+    fonte.scioperi.forEach(e => {
+      const giorno = giornoDi.get(e.data);
+      if (!giorno || !Array.isArray(e.classi)) return;
+      const assemblea = e.tipo === 'assemblea';   // assemblea sindacale: chi copre fa lezione (sostituzione), non vigilanza
+      e.classi.map(c => Object.assign({}, c, { classe: idClasse(c.classe, c.nomeClasse),
+        vigilanza: (c.vigilanza || []).map(v => Object.assign({}, v, { docente: idDocente(v.docente, v.codice), da: v.da ? idClasse(v.da, v.nomeDa) : v.da })) }))
+      .forEach(c => {
+        const lezC = D.lezioni.filter(l => l.giorno === giorno && l.classe === c.classe);
+        lezC.forEach(l => {
+          const k = chiave(giorno, l.ora, l.classe, l.docente);
+          if (c.nonEntra) segnate.set(k, { sciopero: 'nonEntra', assemblea, assente: '', sostituto: '' });
+          else if (c.entra && l.ora < c.entra) segnate.set(k, { sciopero: 'entrata', entra: c.entra, assemblea, assente: '', sostituto: '' });
+          else if (c.esce && l.ora > c.esce) segnate.set(k, { sciopero: 'uscita', esce: c.esce, assemblea, assente: '', sostituto: '' });
+        });
+        (c.vigilanza || []).forEach(v => {
+          lezC.filter(l => l.ora === v.ora).forEach(l => segnate.set(chiave(giorno, l.ora, l.classe, l.docente), { sciopero: 'vigilanza', vigila: v.docente, assemblea, assente: '', sostituto: '' }));
+          const l = lezC.find(x => x.ora === v.ora && !x.compresenza);
+          if (l && v.docente && D.mappa.docente.has(v.docente))
+            extra.push(Object.assign({}, l, { docente: v.docente, materia: assemblea ? 'Sostituzione' : 'Vigilanza', vigilanzaSciopero: true, assemblea }));
+          // il docente spostato da una classe in compresenza: sulla sua lezione di là si legge dove va
+          if (v.da) D.lezioni.filter(x => x.giorno === giorno && x.ora === v.ora && x.classe === v.da && x.docente === v.docente)
+            .forEach(x => segnate.set(chiave(giorno, x.ora, x.classe, x.docente), { sciopero: 'spostato', verso: c.classe, assente: '', sostituto: '' }));
+        });
+      });
+    });
+
+    return { segnate, extra, date, cambi, nascoste, alPosto };
+  }
+
+  /*
+    Le lezioni da mostrare (tabella e «In breve»): quelle dell'orario senza le «nascoste» (docenti spostati da una
+    compresenza, vedi 2b), più quelle «al posto» e, guardando un docente (perDocente), le ore di sostituzione (extra).
+  */
+  function lezioni(D, sost, perDocente) {
+    if (!sost) return D.lezioni;
+    const via = sost.nascoste || new Set();
+    return D.lezioni.filter(l => !via.has(chiave(l.giorno, l.ora, l.classe, l.docente)))
+      .concat(sost.alPosto || [], perDocente ? sost.extra : []);
+  }
+
+  // Il cambio d'aula di una lezione della tabella ({ da, a }) oppure null
+  function cambioAula(sost, l) {
+    return (sost && sost.cambi && sost.cambi.get([l.giorno, l.ora, l.classe].join('|'))) || null;
+  }
+
+  // Le informazioni di una lezione della tabella (o null se è una lezione normale)
+  function di(sost, l) {
+    if (!sost) return null;
+    if (l.sostituzione) return { assente: l.assente, sostituto: l.docente, copia: true, voce: l.voce };
+    if (l.vigilanzaSciopero) return { sciopero: 'vigilanza', vigila: l.docente, assemblea: !!l.assemblea, copia: true, assente: '', sostituto: '' };
+    return sost.segnate.get(chiave(l.giorno, l.ora, l.classe, l.docente)) || null;
+  }
+
+  /*
+    I testi di una lezione toccata da uno sciopero / assemblea (s = quello che restituisce di(), con s.sciopero):
+    { etichetta, riga, classe, nota } per la tabella, «In breve» e il riquadro «per te». Mai chi sciopera.
+    La parola «sciopero» non si vede mai (scelta della scuola, 02/10/2026): le ore in cui la classe non c'è
+    (non entra, entra dopo, esce prima) sono solo «spente» in grigio, senza etichetta, come ore senza lezione;
+    nota = il testo breve per «In breve», il riquadro «per te» e i lettori di schermo.
+  */
+  function testoSciopero(s, nomeDocente) {
+    if (!s || !s.sciopero) return null;
+    if (s.sciopero === 'nonEntra' || s.sciopero === 'entrata' || s.sciopero === 'uscita')
+      return { etichetta: '', riga: '', classe: 'lezione-spenta', nota: 'nessuna lezione' };
+    // assemblea: nelle ore coperte si fa lezione normalmente (sostituzione), non solo vigilanza
+    if (s.sciopero === 'vigilanza' && s.assemblea) return { etichetta: '🔄 Sostituzione', riga: 'assemblea sindacale' + (s.vigila ? ': lezione con ' + nomeDocente(s.vigila) : ''), classe: 'lezione-supplenza' };
+    if (s.sciopero === 'spostato') return { etichetta: '👁 In vigilanza altrove', riga: `va in vigilanza in ${typeof Dati !== 'undefined' ? Dati.nome('classe', s.verso) : s.verso}; qui resta il compresente`, classe: 'lezione-sciopero-fuori' };
+    return { etichetta: '👁 Vigilanza', riga: 'solo vigilanza, niente lezione' + (s.vigila ? ': ' + nomeDocente(s.vigila) : ''), classe: 'lezione-vigilanza' };
+  }
+
+  return { settimana, lezioni, di, cambioAula, scarica, testoSciopero, CHIAVI: ['sostituzioni.assenze', 'sostituzioni.registro', 'sostituzioni.cambiAula', 'sostituzioni.annullate', 'sostituzioni.uscite', 'sostituzioni.scioperi', 'sostituzioni.assenzeAnnullate'] };
+})();

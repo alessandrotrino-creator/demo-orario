@@ -1,0 +1,241 @@
+/*
+  viste-TEST.js – disegna la tabella dell'orario.
+
+  La tabella ha sempre le ORE in riga. In colonna si sceglie una variabile:
+  CLASSI, DOCENTI, AULE oppure GIORNI (la settimana).
+  I filtri (classe, docente, aula) si possono combinare tra loro liberamente.
+*/
+const Viste = (() => {
+  const DIMENSIONI = {
+    classe:  { singolare: 'Classe',  plurale: 'Classi' },
+    docente: { singolare: 'Docente', plurale: 'Docenti' },
+    aula:    { singolare: 'Aula',    plurale: 'Aule' },
+    giorno:  { singolare: 'Giorno',  plurale: 'Giorni' }
+  };
+  const FILTRI = ['classe', 'docente', 'aula'];
+
+  // Evita che testi presi dai dati vengano interpretati come HTML
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Un colore diverso per ogni materia: le materie vengono messe in ordine alfabetico
+  // e distanziate sul cerchio dei colori (angolo aureo), così colori vicini non si ripetono
+  const tinte = new WeakMap();
+  function tinta(D, materia) {
+    if (!tinte.has(D)) {
+      const mappa = new Map();
+      [...new Set(D.lezioni.map(l => l.materia))].sort().forEach((m, i) => mappa.set(m, Math.round((i * 137.508 + 200) % 360)));
+      tinte.set(D, mappa);
+    }
+    const m = tinte.get(D);
+    // materia comparsa dopo (per esempio una compresenza aggiunta con il quadratino): le si dà il colore successivo
+    if (!m.has(materia)) m.set(materia, Math.round((m.size * 137.508 + 200) % 360));
+    return m.get(materia);
+  }
+
+  // Lezioni che rispettano giorno (se serve) e filtri attivi.
+  // Le ore di sostituzione (supplenze-TEST.js) si aggiungono all'orario del docente che sostituisce solo quando
+  // i docenti si vedono uno per uno (colonne "Docenti" o filtro su un docente): altrimenti comparirebbero due volte
+  function lezioniFiltrate(D, stato) {
+    const perDocente = stato.colonne === 'docente' || !!stato.filtri.docente;
+    // (Supplenze.lezioni toglie anche i docenti spostati da una compresenza e mette chi resta in classe al loro posto)
+    const tutte = stato.sostituzioni ? Supplenze.lezioni(D, stato.sostituzioni, perDocente) : D.lezioni;
+    return tutte.filter(l =>
+      (stato.colonne === 'giorno' || l.giorno === stato.giorno) &&
+      FILTRI.every(k => !stato.filtri[k] || l[k] === stato.filtri[k]));
+  }
+
+  // Le colonne da mostrare
+  function colonne(D, stato, lezioni) {
+    if (stato.colonne === 'giorno') return D.giorni.map(g => ({ id: g, nome: g }));
+    const k = stato.colonne;
+    let elenco = D[k];
+    if (stato.filtri[k]) elenco = elenco.filter(e => e.id === stato.filtri[k]);
+    // Con filtri su altre variabili, tengo solo le colonne che hanno almeno una lezione
+    const altriFiltri = FILTRI.some(f => f !== k && stato.filtri[f]);
+    if (altriFiltri) elenco = elenco.filter(e => lezioni.some(l => l[k] === e.id));
+    // Schermo all'ingresso: solo le colonne della pagina che si sta mostrando (vedi ingresso-TEST.js)
+    if (stato.pagina) elenco = elenco.filter(e => stato.pagina.ids.includes(e.id));
+    return elenco;
+  }
+
+  /*
+    Contenuto di una cella: materia + le informazioni che non sono già nella colonna.
+    Compresenze (compresenze-TEST.js) nella stessa cella della lezione del titolare: invece di impilarle sotto a grandezza
+    piena (su telefono la riga diventava altissima) ognuna è UNA riga sottile «＋ docente · tipo», con solo i dati
+    diversi da quelli del titolare (di solito il docente; l'aula solo se è un'altra, per esempio l'Alternativa).
+    Affiancarle a metà larghezza non basta: su telefono la colonna è larga circa 120 px e il tipo diventava «P…».
+  */
+  function cella(D, lezioniCella, stato) {
+    const titolare = lezioniCella.find(l => !l.compresenza);
+    const normali = lezioniCella.filter(l => !titolare || !l.compresenza);
+    const compatte = titolare ? lezioniCella.filter(l => l.compresenza) : [];
+    return normali.map(l => lezione(D, l, stato, null)).join('') +
+      (compatte.length ? `<div class="compresenze-compatte">${compatte.map(l => lezione(D, l, stato, titolare)).join('')}</div>` : '');
+  }
+
+  // Una lezione della cella. titolare = la lezione del titolare se questa è una compresenza da mostrare compatta
+  function lezione(D, l, stato, titolare) {
+    const compatta = !!titolare;
+    const righe = FILTRI
+      .filter(k => k !== stato.colonne && !stato.filtri[k])
+      // compatta: niente dati uguali a quelli del titolare (stessa classe, stessa aula)
+      .filter(k => !compatta || l[k] !== titolare[k])
+      // lezione senza docente da mostrare (al posto di un docente spostato, per chi non vede il sostegno): solo la materia
+      .filter(k => k !== 'docente' || l.docente)
+      .map(k => {
+        const nome = Dati.nome(k, l[k]);
+        // un'aula segnata sulla piantina (piantine-TEST.js) diventa un tasto: toccandolo si vede dov'è
+        if (k === 'aula' && typeof Piantine !== 'undefined' && Piantine.segnata(nome))
+          return `<button type="button" class="dato dato-aula link-piantina" data-piantina="${esc(nome)}" title="Dov'è l'aula ${esc(nome)}"><span class="solo-lettori">Aula (mostra sulla piantina): </span>${esc(nome)}</button>`;
+        return `<span class="dato dato-${k}"><span class="solo-lettori">${DIMENSIONI[k].singolare}: </span>${esc(nome)}</span>`;
+      })
+      .join('');
+    // Lezione cambiata all'ultimo minuto (vedi modifiche-TEST.js): bordo evidenziato ed etichetta
+    const cambiata = stato.modificate && stato.modificate.has(l.giorno + '|' + l.ora + '|' + l.classe);
+    // Docente assente o sostituito questa settimana (vedi supplenze-TEST.js): cornice colorata, etichetta e nomi
+    const sost = Supplenze.di(stato.sostituzioni, l);
+    let classeSost = '', etichettaSost = '', rigaSost = '';
+    const sc = Supplenze.testoSciopero && Supplenze.testoSciopero(sost, id => Dati.nome('docente', id));
+    if (sc) {
+      // sciopero / assemblea (sostituzioni/js/scioperi-TEST.js): vigilanza (classe cerchiata) oppure ora in cui la classe
+      // non c'è, solo spenta in grigio: niente etichetta, il testo resta per i lettori di schermo
+      classeSost = ' ' + sc.classe;
+      etichettaSost = sc.etichetta ? `<span class="etichetta-sost">${esc(sc.etichetta)}</span>` : '';
+      rigaSost = sc.riga ? `<span class="dato-sost">${esc(sc.riga)}</span>` : `<span class="solo-lettori">${esc(sc.nota)}</span>`;
+    } else if (sost && sost.uscita) {
+      // la classe è fuori per un'uscita didattica (sostituzioni/js/uscite-TEST.js): la lezione non si fa
+      classeSost = ' lezione-uscita';
+      etichettaSost = '<span class="etichetta-sost">🚌 Uscita didattica</span>';
+      rigaSost = '<span class="dato-sost">la classe è fuori: lezione non svolta</span>';
+    } else if (sost && sost.copia) {
+      classeSost = ' lezione-supplenza lezione-copia';
+      etichettaSost = '<span class="etichetta-sost">🔄 Sostituzione</span>';
+      rigaSost = `<span class="dato-sost">al posto di ${esc(Dati.nome('docente', sost.assente))}</span>`;
+    } else if (sost && sost.sostituto) {
+      classeSost = ' lezione-supplenza';
+      etichettaSost = '<span class="etichetta-sost">🔄 Sostituzione</span>';
+      rigaSost = `<span class="dato-sost">${esc(Dati.nome('docente', sost.assente))} assente → <b>${esc(Dati.nome('docente', sost.sostituto))}</b></span>`;
+    } else if (sost) {
+      classeSost = ' lezione-scoperta';
+      etichettaSost = '<span class="etichetta-sost">⚠ Docente assente</span>';
+      rigaSost = `<span class="dato-sost">${esc(Dati.nome('docente', sost.assente))} · sostituto da trovare</span>`;
+    }
+    // Chi è autorizzato alle sostituzioni può annullarle da qui: app-TEST.js apre la pagina Sostituzioni, che chiede conferma,
+    // toglie l'ora dal foglio del conteggio e la riga dal foglio «Sostituzioni» (Sostituzioni.annullaVoce)
+    if (sost && sost.sostituto && sost.voce && stato.puoAnnullare) {
+      const v = sost.voce;
+      rigaSost += `<button type="button" class="annulla-sost" data-annulla-sost="${esc([v.id || '', v.data, v.ora, v.classe].join('|'))}"
+        aria-label="Annulla la sostituzione della ${l.ora}ª ora in ${esc(Dati.nome('classe', l.classe))} (sostituisce ${esc(Dati.nome('docente', sost.sostituto))})">✕ Annulla</button>`;
+    }
+    // Allo stesso modo si può togliere l'assenza (tutte le sue ore di quel giorno): Sostituzioni.togliAssenzaPerTutti
+    if (sost && !sost.sostituto && !sost.uscita && !sost.sciopero && sost.assenza && stato.puoAnnullare) {
+      const a = sost.assenza;
+      rigaSost += `<button type="button" class="annulla-sost" data-togli-assenza="${esc([a.id || '', a.data, a.docente].join('|'))}"
+        aria-label="Togli l'assenza di ${esc(Dati.nome('docente', sost.assente))} in questo giorno">✕ Togli assenza</button>`;
+    }
+    // Cambio d'aula di questa settimana (sostituzioni/js/cambi-aula-TEST.js): etichetta e nuova aula ben visibili
+    const cambio = Supplenze.cambioAula(stato.sostituzioni, l);
+    const etichettaCambio = cambio ? '<span class="etichetta-cambio">⇄ Aula cambiata</span>' : '';
+    const rigaCambio = cambio ? `<span class="dato-cambio">aula ${cambio.da ? esc(Dati.nome('aula', cambio.da)) + ' → ' : ''}<b>${esc(Dati.nome('aula', cambio.a))}</b></span>` : '';
+    // Ora di compresenza (vedi compresenze-TEST.js): etichetta e bordo tratteggiato.
+    // Compatta: una sola riga «＋ docente · tipo» (se non ci sta finisce con «…»; il testo intero resta per i lettori
+    // di schermo e nel suggerimento che compare passandoci sopra)
+    const classi = `lezione${cambiata ? ' lezione-modificata' : ''}${classeSost}${cambio ? ' lezione-cambio-aula' : ''}${l.compresenza ? ' lezione-compresenza' : ''}`;
+    const inizio = cambiata ? '<span class="etichetta-modificata">Cambiata</span>' : '';
+    if (compatta) {
+      const suggerimento = 'Compresenza: ' + FILTRI.filter(k => k !== stato.colonne && !stato.filtri[k]).map(k => Dati.nome(k, l[k]))
+        .concat(l.materia || []).filter(Boolean).join(' · ');
+      // si tocca (o Invio da tastiera) per vedere il testo intero: app-TEST.js aggiunge/toglie la classe «aperta»
+      return `<div class="${classi} lezione-compatta" style="--tinta:${tinta(D, l.materia)}" title="${esc(suggerimento)}" tabindex="0" aria-expanded="false">` +
+        inizio + etichettaSost + etichettaCambio +
+        `<span class="riga-compatta"><span aria-hidden="true">＋ </span><span class="solo-lettori">Compresenza: </span>${righe}` +
+        `<span class="tipo-compatta"> · ${esc(l.materia || '—')}</span></span>${rigaSost}${rigaCambio}</div>`;
+    }
+    const etichettaCompresenza = l.compresenza ? '<span class="etichetta-compresenza">＋ Compresenza</span>' : '';
+    return `<div class="${classi}" style="--tinta:${tinta(D, l.materia)}">` + inizio + etichettaSost + etichettaCambio + etichettaCompresenza +
+      `<strong class="materia">${esc(l.materia || '—')}</strong>${righe}${rigaSost}${rigaCambio}</div>`;
+  }
+
+  // Titolo della tabella, es. "Martedì · Classi · docente Anna Rossi"
+  function descrizione(stato) {
+    const parti = [stato.colonne === 'giorno' ? 'Settimana' : stato.giorno];
+    const filtri = FILTRI.filter(k => stato.filtri[k]).map(k => DIMENSIONI[k].singolare.toLowerCase() + ' ' + Dati.nome(k, stato.filtri[k]));
+    // Il nome delle colonne serve solo se non è già chiaro (es. "Classi" senza filtro sulla classe)
+    if (stato.colonne !== 'giorno' && !stato.filtri[stato.colonne]) {
+      const p = stato.pagina;
+      parti.push(DIMENSIONI[stato.colonne].plurale + (p && p.totale > 1 ? ` (${p.numero} di ${p.totale})` : ''));
+    }
+    return parti.concat(filtri).join(' · ');
+  }
+
+  /*
+    Disegna la tabella nell'elemento indicato.
+    adesso = { giorno, ora } serve per evidenziare l'ora in corso.
+    Restituisce il numero di lezioni mostrate.
+  */
+  function disegna(tabella, D, stato, adesso) {
+    const lezioni = lezioniFiltrate(D, stato);
+    const cols = colonne(D, stato, lezioni);
+    const giornoCol = c => stato.colonne === 'giorno' ? c.id : stato.giorno;
+    // Indice veloce: "giorno|ora|colonna" -> lezioni
+    const indice = new Map();
+    lezioni.forEach(l => {
+      const chiave = (stato.colonne === 'giorno' ? l.giorno : l[stato.colonne]) + '|' + l.ora;
+      if (!indice.has(chiave)) indice.set(chiave, []);
+      indice.get(chiave).push(l);
+    });
+
+    let html = `<caption id="didascalia">${esc(descrizione(stato))}</caption><thead><tr><th scope="col" class="angolo">Ora</th>`;
+    cols.forEach(c => {
+      const oggi = stato.colonne === 'giorno' && adesso && c.id === adesso.giorno;
+      html += `<th scope="col"${oggi ? ' class="col-oggi"' : ''}>${esc(c.nome)}${oggi ? ' <span class="etichetta-oggi">oggi</span>' : ''}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    D.ore.forEach(o => {
+      const rigaCorrente = adesso && adesso.ora === o.n && stato.colonne !== 'giorno' && stato.giorno === adesso.giorno;
+      html += `<tr${rigaCorrente ? ' class="ora-corrente"' : ''}><th scope="row"><span class="num-ora">${o.n}ª</span><span class="orario-ora">${esc(o.inizio)}–${esc(o.fine)}</span>${rigaCorrente ? '<span class="solo-lettori"> (ora in corso)</span>' : ''}</th>`;
+      cols.forEach(c => {
+        const corrente = adesso && adesso.ora === o.n && giornoCol(c) === adesso.giorno;
+        const contenuto = indice.get(c.id + '|' + o.n) || [];
+        html += `<td${corrente ? ' class="cella-corrente"' : ''}>${cella(D, contenuto, stato)}</td>`;
+      });
+      html += '</tr>';
+    });
+    tabella.innerHTML = html + '</tbody>';
+    tabella.dataset.colonne = cols.length;
+    return lezioni.length;
+  }
+
+  // Riquadro "adesso / dopo" quando si guarda un solo docente, classe o aula.
+  // adesso = { giorno, ora, minuto }: giorno e ora di scuola in questo momento.
+  function riquadroAdesso(D, stato, adesso) {
+    if (stato.colonne === 'giorno' || !FILTRI.some(k => stato.filtri[k])) return '';
+    const delGiorno = D.lezioni.filter(l => l.giorno === stato.giorno && FILTRI.every(k => !stato.filtri[k] || l[k] === stato.filtri[k]));
+    const descrivi = l => [l.materia]
+      .concat(FILTRI.filter(k => !stato.filtri[k]).map(k => Dati.nome(k, l[k])))
+      .filter(Boolean).map(esc).join(' · ');
+    const minutiInizio = n => { const o = D.ore.find(x => x.n === n); const [h, m] = (o ? o.inizio : '0:0').split(':').map(Number); return h * 60 + m; };
+    const blocco = (classe, etichetta, lezioni) =>
+      `<div class="${classe}"><span class="etichetta">${etichetta}</span><span class="valore">${lezioni.length ? lezioni.map(descrivi).join('<br>') : 'Nessuna lezione'}</span></div>`;
+    const etichettaOra = n => { const o = D.ore.find(x => x.n === n); return `${n}ª ora (${esc(o ? o.inizio : '')})`; };
+
+    // Si guarda un altro giorno (es. domani): mostro solo la prima lezione di quel giorno
+    const oggi = adesso && adesso.giorno === stato.giorno;
+    const future = oggi ? delGiorno.filter(l => minutiInizio(l.ora) > adesso.minuto) : delGiorno;
+    const nProssima = future.length ? Math.min(...future.map(l => l.ora)) : null;
+    const prossime = future.filter(l => l.ora === nProssima);
+    let html = '';
+    if (oggi && adesso.ora) {
+      html += blocco('blocco-adesso', 'Adesso · ' + etichettaOra(adesso.ora), delGiorno.filter(l => l.ora === adesso.ora));
+    }
+    if (prossime.length) {
+      const titolo = oggi ? (adesso.ora ? 'Dopo' : 'Prima lezione') : 'Prima lezione di ' + esc(stato.giorno.toLowerCase());
+      html += blocco('blocco-dopo', titolo + ' · ' + etichettaOra(nProssima), prossime);
+    } else if (oggi && adesso.ora) {
+      html += '<div class="blocco-dopo"><span class="etichetta">Dopo</span><span class="valore">Nessun’altra lezione oggi</span></div>';
+    }
+    return html;
+  }
+
+  return { disegna, riquadroAdesso, DIMENSIONI, FILTRI, esc };
+})();

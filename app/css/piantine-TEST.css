@@ -1,0 +1,48 @@
+/*
+  piantine-TEST.css – la piantina di un piano con i segnaposto delle aule (js/piantine-TEST.js).
+  La usano l'app Luis@i (finestra «📍 Dov'è») e Orario Facile (scheda Aule, «Aule sulla piantina").
+*/
+.piantina { position: relative; display: inline-block; max-width: 100%; line-height: 0; background: #fff; border-radius: 8px; overflow: hidden; }
+.piantina img { display: block; max-width: 100%; height: auto; user-select: none; }
+/* disegno SVG a rettangoli: occupa tutta la larghezza (su telefono si scorre di lato) */
+.piantina-vettoriale { display: block; width: 100%; min-width: 640px; }
+.piantina-vettoriale svg { display: block; width: 100%; height: auto; }
+/* le stanze che si possono toccare: superfici in un solo colore, contorni semplici */
+.piantina-vettoriale .stanza { fill: #e3e8ef; stroke: #1f2937; cursor: pointer; transition: fill .15s; }
+.piantina-vettoriale .stanza.assegnata { fill: #b9cbe6; }
+.piantina-vettoriale .stanza:hover, .piantina-vettoriale .stanza:focus { fill: #93b0dc; outline: none; }
+.piantina-vettoriale .stanza:focus-visible { stroke: #1c56b8; stroke-width: 5; }
+.piantina-vettoriale .stanza.scelta { fill: #ffd23f; }
+.piantina-vettoriale .servizio { fill: #f3f4f6; stroke: #9ca3af; }
+/* i nomi scritti nel disegno non devono bloccare il tocco sulla stanza */
+.piantina-vettoriale text { pointer-events: none; user-select: none; }
+.nota-piantina { margin: 6px 0 0; font-size: .9rem; opacity: .8; }
+/* aula in un altro edificio (colonna «Piano» con un testo, es. «Edificio mensa»): solo il messaggio */
+.altro-edificio { font-size: 1.15rem; margin: 18px 0; }
+
+/* il segnaposto: un cerchio con il nome dell'aula, centrato sul punto */
+.segno-piantina {
+  position: absolute; transform: translate(-50%, -50%); line-height: 1.1; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 999px; background: rgba(28, 86, 184, .9); color: #fff; font: 700 11px/1 Arial, sans-serif;
+  box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(0, 0, 0, .35); white-space: nowrap;
+}
+/* l'aula cercata (app) o quella scelta (Orario Facile): più grande, gialla e pulsante */
+.segno-piantina.scelto { background: #ffd23f; color: #1a1f2b; font-size: 14px; height: 30px; padding: 0 10px; animation: batte-piantina 1.4s ease-in-out infinite; }
+@keyframes batte-piantina { 50% { box-shadow: 0 0 0 4px #fff, 0 0 0 10px rgba(255, 210, 63, .45); } }
+@media (prefers-reduced-motion: reduce) { .segno-piantina.scelto { animation: none; } }
+
+/* app: la finestra «📍 Dov'è» */
+.finestra-piantina { max-width: min(96vw, 1200px); width: 96vw; }
+.finestra-piantina .corpo-piantina { max-height: 70vh; overflow: auto; text-align: center; }
+/* app: l'aula nella tabella o in «In breve» diventa un tasto che apre la piantina.
+   :where() = priorità zero: il tasto perde l'aspetto da pulsante ma tiene la grandezza e il colore dell'aula
+   (per esempio l'aula grande e blu della scheda «Adesso», .aula-breve) */
+:where(.link-piantina) { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+.link-piantina { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.link-piantina:focus-visible { outline: 2px solid var(--primario, #1c56b8); outline-offset: 2px; }
+
+/* Orario Facile: si tocca la piantina per posizionare l'aula scelta */
+.pa-contenitore { overflow: auto; max-height: 75vh; border: 1px solid var(--line, #ccc); border-radius: 8px; }
+.pa-contenitore.pa-attiva { cursor: crosshair; }
+.pa-aule { gap: 6px; }

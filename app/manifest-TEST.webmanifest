@@ -1,0 +1,18 @@
+{
+  "name": "Luis@i",
+  "short_name": "Luis@i",
+  "description": "Luis@i: l'orario delle lezioni con classi, docenti e aule.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2458c6",
+  "theme_color": "#1c56b8",
+  "icons": [
+    { "src": "icone/icona-192-TEST.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone/icona-512-TEST.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone/icona-maskable-512-TEST.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icone/icona-TEST.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

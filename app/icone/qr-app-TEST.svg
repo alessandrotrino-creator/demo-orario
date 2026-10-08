@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="QR non disponibile nella copia di prova">
+  <rect width="320" height="320" rx="16" fill="#f2f4f7" stroke="#c9ced6" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="160" y="140" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#3a4250">QR della demo</text>
+  <text x="160" y="172" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#5b6472">non ancora generato:</text>
+  <text x="160" y="196" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#5b6472">usa l'indirizzo qui sotto</text>
+</svg>

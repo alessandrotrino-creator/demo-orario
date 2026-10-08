@@ -1,0 +1,12 @@
+{
+ "meta": { "nome": "Scuola di prova", "anno": "2026/2027", "durata": 60, "inizio": "08:00", "versioneDati": "vuoto" },
+ "giorni": ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì"],
+ "oreM": 6,
+ "oreP": 2,
+ "classi": [],
+ "discipline": [],
+ "aule": [],
+ "docenti": [],
+ "quadro": {},
+ "orario": {}
+}

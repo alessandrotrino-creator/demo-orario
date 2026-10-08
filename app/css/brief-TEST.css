@@ -1,0 +1,149 @@
+/*
+  brief-TEST.css – stile della vista "In breve" (la giornata a schede).
+  Usa i colori di app-TEST.css e aggiunge solo le sfumature della testata
+  per il momento della giornata. Stesse regole del tema chiaro/scuro di app-TEST.css.
+*/
+:root {
+  --mattina-a: #ffe7b0; --mattina-b: #cfe3ff;
+  --pomeriggio-a: #ffd2b8; --pomeriggio-b: #f1dcff;
+  --sera-a: #2a3558; --sera-b: #151a2c;
+  --testo-testata: #1a1f2b;        /* testo sulle sfumature chiare */
+  --testo-testata-sera: #eef1f8;   /* testo sulla sfumatura della sera */
+  --ombra-scheda: 0 6px 20px rgba(28, 86, 184, .10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="chiaro"]) {
+    --mattina-a: #3a3320; --mattina-b: #1c2a44;
+    --pomeriggio-a: #452a22; --pomeriggio-b: #33223f;
+    --testo-testata: #e8ecf3;
+    --ombra-scheda: 0 6px 20px rgba(0, 0, 0, .35);
+  }
+}
+:root[data-tema="scuro"] {
+  --mattina-a: #3a3320; --mattina-b: #1c2a44;
+  --pomeriggio-a: #452a22; --pomeriggio-b: #33223f;
+  --testo-testata: #e8ecf3;
+  --ombra-scheda: 0 6px 20px rgba(0, 0, 0, .35);
+}
+
+/* ---------- Tasto "In breve" nella barra ---------- */
+.pulsante-breve {
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 700;
+  border-radius: 999px;   /* bordo normale: il cerchio blu compare solo quando è selezionato (css/barra-TEST.css) */
+  background: linear-gradient(120deg, var(--mattina-a), var(--mattina-b)); color: var(--testo-testata);
+}
+.pulsante-breve svg { width: 16px; height: 16px; flex: none; }
+/* Il colore del tasto «In breve» cambia con il momento della giornata, come la testata della vista
+   (app-TEST.js scrive data-momento sul <body>: mattina, pomeriggio o sera) */
+body[data-momento="pomeriggio"] .pulsante-breve { background: linear-gradient(120deg, var(--pomeriggio-a), var(--pomeriggio-b)); }
+body[data-momento="sera"] .pulsante-breve { background: linear-gradient(120deg, var(--sera-a), var(--sera-b)); color: var(--testo-testata-sera); }
+body.modalita-monitor .pulsante-breve { display: none; }
+
+/* Telefoni: la barra resta su una riga; il nome della scuola si accorcia con "…" per fare spazio ai pulsanti */
+@media (max-width: 520px) {
+  body:not(.modalita-monitor) .barra { flex-wrap: nowrap; padding-left: 10px; padding-right: 10px; gap: 6px; }
+  .marchio { flex: 1 1 auto; min-width: 0; gap: 6px; }
+  .testo-marchio { min-width: 0; }
+  .info-scuola { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .azioni-barra { gap: 6px; flex: none; }
+  .azioni-barra .pulsante { padding-left: 10px; padding-right: 10px; }
+}
+/* Telefoni molto stretti: resta solo "Orario" accanto al logo */
+@media (max-width: 380px) { .info-scuola { display: none; } }
+
+/* Quando "In breve" è aperta, controlli e tabella si nascondono */
+body.breve-aperta .controlli, body.breve-aperta #contenuto { display: none; }
+
+/* ---------- Vista ---------- */
+.vista-breve { display: grid; gap: 12px; padding-bottom: 16px; outline: none; }
+
+.testata-breve {
+  display: grid; gap: 4px; padding: 14px 16px 26px; color: var(--testo-testata);
+  background: linear-gradient(150deg, var(--mattina-a), var(--mattina-b));
+}
+.testata-breve[data-momento="pomeriggio"] { background: linear-gradient(150deg, var(--pomeriggio-a), var(--pomeriggio-b)); }
+.testata-breve[data-momento="sera"] { background: linear-gradient(150deg, var(--sera-a), var(--sera-b)); color: var(--testo-testata-sera); }
+.riga-testata { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.marchio-breve { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.pulsante-tabella { min-height: 40px; padding: 6px 14px; color: var(--testo); }
+.testata-breve h2 { margin: 8px 0 0; font-size: 1.6rem; line-height: 1.15; text-wrap: balance; }
+.data-breve { margin: 0; font-size: .95rem; opacity: .9; }
+.avviso-breve { margin: 4px 0 0; font-size: .85rem; font-weight: 600; }
+/* Le due tendine "Giornata di" e "Giorno": una sotto l'altra sul telefono, affiancate sugli schermi larghi */
+.scelte-breve { display: grid; gap: 8px; margin-top: 10px; }
+.scelta-breve { display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; }
+.scelta-breve > span { flex: none; min-width: 5.2em; }
+.scelta-breve select { flex: 1; min-width: 0; color: var(--testo); }
+
+/* Schede grandi: salgono un po' sopra la testata */
+.schede-breve { display: grid; gap: 12px; padding: 0 16px; margin-top: -22px; }
+.scheda-breve {
+  display: grid; gap: 6px; padding: 14px 16px; border-radius: 20px;
+  background: var(--superficie); box-shadow: var(--ombra-scheda);
+}
+.scheda-adesso { border: 2px solid var(--evidenza-bordo); }
+.riga-breve { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pill-breve {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px; background: var(--evidenza); color: var(--testo);
+}
+.scheda-dopo .pill-breve { background: var(--avviso); color: var(--primario); }
+.materia-breve { font-size: 1.2rem; font-weight: 700; }
+.dettagli-breve { font-size: .88rem; color: var(--testo-tenue); font-variant-numeric: tabular-nums; }
+.aula-breve { display: inline-flex; align-items: center; gap: 6px; font-size: 1.45rem; font-weight: 800; color: var(--primario); }
+.aula-breve svg { width: 20px; height: 20px; flex: none; }
+.tempo-breve { display: grid; gap: 4px; margin-top: 4px; }
+.barra-tempo { height: 6px; border-radius: 999px; background: var(--bordo); overflow: hidden; }
+.barra-tempo i { display: block; height: 100%; border-radius: inherit; background: var(--evidenza-bordo); }
+.spostati-breve { margin: 4px 0 0; padding: 8px 12px; border-radius: 12px; background: var(--avviso); font-size: .9rem; }
+.spostati-breve b { color: var(--primario); }
+.vuoto-breve { margin: 0; color: var(--testo-tenue); }
+
+/* Il resto della giornata: una scheda grande per ogni ora, una sotto l'altra, larga quanto lo schermo */
+.titoletto-breve {
+  margin: 6px 16px 0; font-size: .78rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--testo-tenue);
+}
+.giornata-breve { list-style: none; margin: 0; padding: 0 16px 6px; display: grid; gap: 10px; }
+.scheda-ora { box-shadow: var(--ombra); }
+.aula-ora { display: inline-flex; align-items: center; gap: 6px; font-size: 1.15rem; font-weight: 700; color: var(--primario); }
+.aula-ora svg { width: 17px; height: 17px; flex: none; }
+.pill-ora {
+  font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--bordo); color: var(--testo-tenue);
+}
+.scheda-ora.fatta { opacity: .6; }
+.scheda-ora.libera { background: transparent; box-shadow: none; border: 2px dashed var(--bordo); }
+.scheda-ora.in-corso { border: 2px solid var(--evidenza-bordo); background: var(--evidenza); }
+
+/* Tablet e schermi più larghi: la vista è centrata, le schede "Adesso" e "Dopo" stanno affiancate
+   e il resto della giornata diventa una griglia di schede grandi che va a capo (niente scorrimento di lato).
+   Da 600px: così vale anche per i tablet piccoli (7 pollici) tenuti in verticale */
+@media (min-width: 600px) {
+  .vista-breve { max-width: 960px; margin: 16px auto 0; border-radius: 24px; overflow: hidden; }
+  .testata-breve { padding: 20px 24px 32px; }
+  .testata-breve h2 { font-size: 2rem; }
+  .scelte-breve { grid-template-columns: 1fr 1fr; max-width: 720px; }
+  .scelta-breve > span { min-width: 0; }
+  .schede-breve { grid-template-columns: 1fr 1fr; align-items: start; padding: 0 24px; }
+  .schede-breve > :only-child { grid-column: 1 / -1; }   /* una sola scheda: occupa tutta la riga */
+  .scheda-breve { padding: 18px 20px; }
+  .materia-breve { font-size: 1.4rem; }
+  .aula-breve { font-size: 1.7rem; }
+  .titoletto-breve { margin: 10px 24px 0; }
+  /* Tablet: le schede delle ore restano grandi, due per riga */
+  .giornata-breve { grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 24px 8px; }
+  .aula-ora { font-size: 1.3rem; }
+}
+
+@media print { .vista-breve, .pulsante-breve { display: none !important; } }
+
+/* Sostituzioni, assenze, uscite e cambi d'aula della settimana nella giornata a schede (brief-TEST.js):
+   arancione = sostituzione, rosso = manca il sostituto, grigio = uscita didattica, blu = aula cambiata */
+.nota-sost-breve {
+  margin: 0; padding: 6px 10px; border-radius: 10px; font-size: .88rem; font-weight: 600; line-height: 1.3;
+  border-left: 4px solid var(--sost-bordo); background: color-mix(in srgb, var(--sost-bordo) 12%, transparent);
+}
+.nota-sost-breve.scoperta { border-left-color: var(--errore); background: color-mix(in srgb, var(--errore) 10%, transparent); }
+.nota-sost-breve.uscita { border-left-color: #6b7280; background: color-mix(in srgb, #6b7280 12%, transparent); }
+.nota-sost-breve.cambio { border-left-color: var(--primario); background: color-mix(in srgb, var(--primario) 10%, transparent); }

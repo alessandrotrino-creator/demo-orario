@@ -1,0 +1,412 @@
+<!doctype html>
+<!-- © 2026 Istituto Comprensivo di Almese (www.comprensivoalmese.it) – realizzato dal Gruppo Wolf.
+     Tutti i diritti riservati: nessun uso senza permesso scritto della scuola (vedi LICENZA.md) -->
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luis@i</title>
+  <meta name="description" content="Orario delle lezioni: classi, docenti e aule.">
+  <meta name="theme-color" content="#1c56b8">
+  <!-- Installazione come app (Android, Windows, iPhone/iPad) -->
+  <link rel="manifest" href="manifest-TEST.webmanifest">
+  <link rel="icon" href="icone/favicon-TEST.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="icone/apple-touch-icon-TEST.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Luis@i">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="css/app-TEST.css">
+  <link rel="stylesheet" href="css/brief-TEST.css">
+  <link rel="stylesheet" href="css/campanella-TEST.css">
+  <link rel="stylesheet" href="css/barra-TEST.css">
+  <link rel="stylesheet" href="css/smart-TEST.css">
+  <link rel="stylesheet" href="css/piantine-TEST.css">
+  <link rel="stylesheet" href="css/menu-TEST.css">
+  <link rel="stylesheet" href="css/avviso-per-te-TEST.css">
+  <link rel="stylesheet" href="css/calendario-TEST.css">
+  <!-- Impostazioni e tema prima della pagina, per non vedere un lampo di colore sbagliato -->
+  <script src="js/config-TEST.js"></script>
+  <script src="js/tema-TEST.js"></script>
+</head>
+<body>
+  <a class="salta" href="#contenuto">Vai all'orario</a>
+
+  <!-- Caricamento: il robottino a pixel (la mascotte dell'app, come nell'icona) dondola mentre l'app si prepara.
+       È disegnato qui dentro, così compare subito senza aspettare altri file. In caso di errore
+       app-TEST.js sostituisce il contenuto con il messaggio e il pulsante "Riprova".
+       Le misure sono in quadretti (griglia 16×16, la stessa di icone/icona-TEST.svg). -->
+  <div id="caricamento" class="caricamento" role="status">
+    <svg class="robot-caricamento" viewBox="-1.5 -1.5 19 19.5" shape-rendering="crispEdges" aria-hidden="true" focusable="false">
+      <ellipse class="robot-ombra" cx="8" cy="16.9" rx="5.5" ry=".5"/>
+      <g class="robot-tutto">
+        <!-- antenne: le palline gialle pulsano -->
+        <rect x="3" y="2" width="1" height="1" fill="#fff"/>
+        <rect x="12" y="2" width="1" height="1" fill="#fff"/>
+        <rect x="4" y="3" width="1" height="1" fill="#fff"/>
+        <rect x="11" y="3" width="1" height="1" fill="#fff"/>
+        <rect class="robot-luce" x="1" y="0" width="2" height="2" fill="#ffcf3f"/>
+        <rect class="robot-luce" x="13" y="0" width="2" height="2" fill="#ffcf3f"/>
+        <!-- corpo, con le braccine -->
+        <rect x="3" y="4" width="10" height="1" fill="#fff"/>
+        <rect x="2" y="5" width="12" height="4" fill="#fff"/>
+        <rect x="3" y="9" width="10" height="1" fill="#fff"/>
+        <rect x="1" y="10" width="14" height="2" fill="#fff"/>
+        <rect x="3" y="12" width="10" height="3" fill="#fff"/>
+        <!-- occhi a stanghetta: sbattono le palpebre -->
+        <g class="robot-occhi">
+          <rect x="5" y="6" width="1" height="2" fill="#10275a"/>
+          <rect x="10" y="6" width="1" height="2" fill="#10275a"/>
+        </g>
+        <!-- orologio sulla pancia: la lancetta lunga gira -->
+        <rect x="6" y="10" width="4" height="1" fill="#ffcf3f"/>
+        <rect x="5" y="11" width="6" height="2" fill="#ffcf3f"/>
+        <rect x="6" y="13" width="4" height="1" fill="#ffcf3f"/>
+        <rect x="7" y="12" width="3" height="1" fill="#10275a"/>
+        <rect class="robot-lancetta" x="7" y="11" width="1" height="1.5" fill="#10275a"/>
+        <!-- piedi -->
+        <rect x="3" y="15" width="3" height="1" fill="#ffcf3f"/>
+        <rect x="10" y="15" width="3" height="1" fill="#ffcf3f"/>
+      </g>
+    </svg>
+    <p class="testo-caricamento">Preparo l'orario<span class="puntini" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+  </div>
+
+  <!-- ===== Schermata di accesso ===== -->
+  <main id="schermataAccesso" class="accesso" hidden aria-labelledby="titoloAccesso">
+    <div class="scheda-accesso">
+      <img src="icone/icona-TEST.svg" alt="" width="72" height="72">
+      <h1 id="titoloAccesso">Luis@i</h1>
+      <p>Accedi con il tuo account della scuola <strong id="dominioAccesso"></strong></p>
+
+      <label class="ricordami">
+        <input type="checkbox" id="ricordami" checked>
+        Ricordami su questo dispositivo
+      </label>
+
+      <!-- Qui Google disegna il pulsante "Accedi con Google" -->
+      <div id="pulsanteGoogle" class="pulsante-google"></div>
+
+      <!-- Modalità dimostrativa: si vede solo se manca l'ID client di Google in config-TEST.js -->
+      <form id="moduloDemo" class="modulo-demo" hidden novalidate>
+        <p class="avviso-demo"><strong>Modalità dimostrativa.</strong> L'accesso con Google non è ancora configurato: l'indirizzo non viene verificato.</p>
+        <label for="emailDemo">Email della scuola</label>
+        <input type="email" id="emailDemo" autocomplete="email" inputmode="email" required>
+        <button type="submit" class="pulsante primario">Entra</button>
+      </form>
+
+      <p id="erroreAccesso" class="errore" role="alert"></p>
+    </div>
+  </main>
+
+  <!-- ===== App ===== -->
+  <div id="app" hidden>
+    <!-- Riquadro che scende dall'alto: le sostituzioni che riguardano il docente che ha fatto l'accesso (js/avviso-per-te-TEST.js) -->
+    <section id="avvisoPerTe" class="avviso-per-te" hidden role="status" aria-live="polite" aria-labelledby="titoloPerTe">
+      <h2 id="titoloPerTe"></h2>
+      <ul id="elencoPerTe"></ul>
+      <div class="per-te-tasti">
+        <button type="button" id="vediPerTe" class="primario">Vedi il mio orario</button>
+        <button type="button" id="chiudiPerTe">Ho visto</button>
+      </div>
+    </section>
+    <header class="barra">
+      <button type="button" id="btnHome" class="marchio" aria-label="Torna alla schermata iniziale">
+        <img src="icone/icona-TEST.svg" alt="" width="32" height="32">
+        <span class="testo-marchio">
+          <span class="nome-app">Luis@i</span>
+          <span id="infoScuola" class="info-scuola"></span>
+        </span>
+      </button>
+      <span id="titoloMonitor" class="titolo-monitor"></span>
+      <div class="azioni-barra">
+        <span id="orologio" class="orologio"></span>
+        <!-- Campanella: apre le impostazioni del suono; quando è attiva il tasto è acceso (giallo) -->
+        <button type="button" id="btnCampanella" class="pulsante-campanella" aria-haspopup="true" aria-expanded="false" aria-controls="pannelloCampanella" aria-label="Campanella spenta: attivala">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm7-6v-5a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1z"/></svg>
+        </button>
+        <!-- Apre/chiude la vista "In breve" (la giornata a schede) -->
+        <button type="button" id="btnBreve" class="pulsante pulsante-breve" aria-pressed="false" aria-controls="vistaBreve">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M2 2h5v5H2zM9 2h5v3H9zM9 7h5v7H9zM2 9h5v5H2z"/></svg>
+          <span class="testo-tasto">In breve</span>
+        </button>
+        <!-- «Impegni»: apre il calendario degli impegni collegiali dell'anno (js/calendario-TEST.js, dati pubblicati su Drive).
+             Solo per i docenti: parte nascosto e app-TEST.js lo mostra quando riconosce un docente (aggiornaSostegno) -->
+        <button type="button" id="btnCalendario" class="pulsante pulsante-calendario" aria-pressed="false" aria-controls="vistaCalendario" title="Calendario degli impegni" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zM5 9h14v11H5V9zm2 2v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2zm-8 4v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/></svg>
+          <span class="testo-tasto">Impegni</span>
+        </button>
+        <!-- Sui telefoni questi tasti mostrano solo l'icona: la scritta resta per i lettori di schermo (css/barra-TEST.css) -->
+        <!-- "Il mio orario": tasto come "Oggi"; apre la vista "In breve" con la giornata del docente che ha fatto l'accesso -->
+        <button type="button" id="btnMioOrario" class="pulsante tasto-icona" title="Il mio orario" aria-pressed="false" aria-controls="vistaBreve" hidden>
+          <svg class="icona-telefono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+          <span class="testo-tasto">Il mio orario</span>
+        </button>
+        <!-- Nomi veri dei docenti, dal file riservato su Google Drive (js/nomi-TEST.js): solo per chi ha accesso al file -->
+        <button type="button" id="btnNomi" class="pulsante" aria-pressed="false" title="Mostra i nomi dei docenti al posto dei codici (DOC01…)">👁 Nomi</button>
+        <button type="button" id="btnOggi" class="pulsante tasto-icona" title="Oggi">
+          <svg class="icona-telefono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zM5 10h14v10H5V10zm2 2v4h4v-4H7z"/></svg>
+          <span class="testo-tasto">Oggi</span>
+        </button>
+        <button type="button" id="btnUtente" class="pulsante-utente" aria-haspopup="true" aria-expanded="false" aria-controls="menu"></button>
+      </div>
+      <!-- Menu dell'utente (tabindex="-1": può ricevere il focus quando si apre, senza entrare nell'ordine del tasto Tab) -->
+      <div id="menu" class="menu" tabindex="-1" aria-label="Menu utente" hidden>
+        <p class="utente"><strong id="nomeUtente"></strong><br><span id="emailUtente"></span></p>
+        <!-- Le voci sono divise in gruppi con un titolo; tutte hanno la stessa forma: icona + testo (css/menu-TEST.css) -->
+        <div class="sezione-menu" role="group" aria-labelledby="titoloImpostazioni">
+        <p class="titolo-sezione" id="titoloImpostazioni">Impostazioni</p>
+        <label for="sceltaMonitor">Uso di questo dispositivo:</label>
+        <select id="sceltaMonitor"></select>
+        <!-- Compare solo per lo schermo all'ingresso -->
+        <div id="gruppoRotazione" class="gruppo-menu" hidden>
+          <!-- L'utente sceglie liberamente ogni quanti secondi cambiano le viste -->
+          <label for="sceltaSecondi">Cambia vista ogni quanti secondi? (da 5 a 600)</label>
+          <div class="campo-secondi">
+            <button type="button" id="menoSecondi" class="pulsante" aria-label="5 secondi in meno">−</button>
+            <input type="number" id="sceltaSecondi" min="5" max="600" step="1" inputmode="numeric">
+            <span aria-hidden="true">secondi</span>
+            <button type="button" id="piuSecondi" class="pulsante" aria-label="5 secondi in più">+</button>
+          </div>
+          <p id="esitoSecondi" class="esito-secondi" role="status"></p>
+        </div>
+        <label for="sceltaTema">Tema:</label>
+        <select id="sceltaTema">
+          <option value="dispositivo">Come il dispositivo</option>
+          <option value="chiaro">Chiaro</option>
+          <option value="scuro">Scuro</option>
+          <option value="ora" id="opzioneTemaOra">Secondo l'ora</option>
+        </select>
+        <!-- Compare solo se su questo dispositivo c'è un orario preparato con Orario Facile -->
+        <div id="gruppoFonte" class="gruppo-menu" hidden>
+          <label for="sceltaFonte">Orario da mostrare:</label>
+          <select id="sceltaFonte">
+            <option value="bozza">Bozza di Orario Facile (questo dispositivo)</option>
+            <option value="pubblicato">Orario pubblicato</option>
+          </select>
+        </div>
+        </div>
+
+        <div class="sezione-menu" role="group" aria-labelledby="titoloVociOrario">
+          <p class="titolo-sezione" id="titoloVociOrario">Orario</p>
+          <button type="button" id="btnRicarica" class="voce-menu">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            <span class="testo-voce">Aggiorna l'orario</span></button>
+          <!-- come il pulsante «Nomi» della barra, che sugli schermi stretti è nascosto per mancanza di spazio -->
+          <button type="button" id="btnNomiMenu" class="voce-menu">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+            <span class="testo-voce">Mostra i nomi dei docenti</span></button>
+          <button type="button" id="btnSchermoIntero" class="voce-menu">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+            <span class="testo-voce">Schermo intero</span></button>
+        </div>
+
+        <!-- Solo per il docente riconosciuto dall'email: i SUOI dati di servizio (ognuno vede solo i propri).
+             Se tutte le voci sono nascoste sparisce anche il titolo (css/menu-TEST.css) -->
+        <div class="sezione-menu" role="group" aria-labelledby="titoloMioServizio">
+          <p class="titolo-sezione" id="titoloMioServizio">Il mio servizio</p>
+          <!-- Le sostituzioni fatte in tutto l'anno (js/storico-sostituzioni-TEST.js) -->
+          <button type="button" id="btnMieSostituzioni" class="voce-menu" hidden>
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19 3h-4.2A3 3 0 0 0 12 1a3 3 0 0 0-2.8 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-2 14-4-4 1.4-1.4 2.6 2.6 6.6-6.6L18 9l-8 8z"/></svg>
+            <span class="testo-voce">Le mie sostituzioni</span></button>
+          <!-- Le proprie attività funzionali (40+40 ore, js/quaranta-ore-TEST.js): compare solo al docente che è stato abilitato -->
+          <button type="button" id="btn40ore" class="voce-menu" hidden>
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+            <span class="testo-voce">Le mie 40+40</span></button>
+        </div>
+
+        <!-- Solo per chi può modificare l'orario: se tutte le voci sono nascoste sparisce anche il titolo -->
+        <div class="sezione-menu" role="group" aria-labelledby="titoloGestione">
+          <p class="titolo-sezione" id="titoloGestione">Gestione</p>
+          <!-- Orario Facile (gestione strutturale: orario, compresenze, sostituzioni): si apre in una nuova scheda del browser
+               (target="_blank": con l'app installata una finestra con un nome, come prima, non si apriva) -->
+          <a id="linkOrarioFacile" class="voce-menu" href="../orario-facile/" target="_blank" rel="noopener">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            <span class="testo-voce">Passa a Orario Facile</span></a>
+          <!-- Versione semplice e rapida delle sostituzioni, dentro l'app (js/smart-TEST.js): solo per chi è autorizzato.
+               Icona: le persone stilizzate (prima c'era il fulmine, tenuto da parte per altri usi) -->
+          <button type="button" id="btnSostSmart" class="voce-menu" hidden>
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1.3.5-2.3 1.4-3.1A12 12 0 0 0 8 13zm8 0c-.3 0-.7 0-1.1.1 1.2.8 2.1 1.9 2.1 3.4V19h7v-2c0-2.7-5.3-4-8-4z"/></svg>
+            <span class="testo-voce">Sostituzioni smart</span></button>
+          <!-- Cambi d'aula di un giorno (stessa pagina di "Sostituzioni smart", modalità 'cambi'): solo per chi è autorizzato -->
+          <button type="button" id="btnCambiAula" class="voce-menu" hidden>
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M7 7h11.2l-3.6-3.6L16 2l6 6-6 6-1.4-1.4 3.6-3.6H7V7zm10 10H5.8l3.6 3.6L8 22l-6-6 6-6 1.4 1.4L5.8 15H17v2z"/></svg>
+            <span class="testo-voce">Cambi d'aula</span></button>
+        </div>
+
+        <div class="sezione-menu" role="group" aria-labelledby="titoloApp">
+          <p class="titolo-sezione" id="titoloApp">App</p>
+          <!-- Manuale per chi consulta l'orario (manuale-TEST.html): si apre al posto dell'app, «Chiudi manuale» riporta qui -->
+          <a id="linkManuale" class="voce-menu" href="manuale-TEST.html">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+            <span class="testo-voce">Manuale d'uso</span></a>
+          <button type="button" id="btnCondividi" class="voce-menu">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.4a3 3 0 0 0 0-1.6l6.7-3.4A3 3 0 1 0 15 7c0 .3 0 .5.1.8L8.4 11.2a3 3 0 1 0 0 4.6l6.7 3.4c-.1.3-.1.5-.1.8a3 3 0 1 0 3-3z"/></svg>
+            <span class="testo-voce">Condividi l'app con i colleghi</span></button>
+          <!-- Nascosto se l'app è già installata -->
+          <button type="button" id="btnInstalla" class="voce-menu installa">
+            <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+            <span class="testo-voce">Installa l'app su questo dispositivo</span></button>
+        </div>
+
+        <button type="button" id="btnEsci" class="voce-menu voce-esci">
+          <svg class="icona-voce" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10 17l1.4-1.4L8.8 13H20v-2H8.8l2.6-2.6L10 7l-5 5 5 5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5z"/></svg>
+          <span class="testo-voce">Esci</span></button>
+      </div>
+      <!-- Pannello della campanella (lo gestisce js/campanella-TEST.js) -->
+      <div id="pannelloCampanella" class="menu pannello-campanella" tabindex="-1" role="dialog" aria-labelledby="titoloCampanella" hidden>
+        <div class="riga-campanella">
+          <h2 id="titoloCampanella">Campanella</h2>
+          <button type="button" id="chiudiCampanella" class="pulsante leggero" aria-label="Chiudi le impostazioni della campanella">✕</button>
+        </div>
+        <label class="interruttore">
+          <input type="checkbox" id="campanellaAttiva">
+          <span>Suona agli orari della campanella</span>
+        </label>
+        <fieldset class="gruppo-campanella">
+          <legend>Quando suonare</legend>
+          <label><input type="radio" name="modoCampanella" value="cambio"> Al cambio d'ora</label>
+          <label><input type="radio" name="modoCampanella" value="prima"> Qualche minuto prima</label>
+          <label><input type="radio" name="modoCampanella" value="entrambi"> Entrambi</label>
+        </fieldset>
+        <label for="minutiCampanella">Quanti minuti prima:</label>
+        <select id="minutiCampanella">
+          <option value="1">1 minuto</option>
+          <option value="2">2 minuti</option>
+          <option value="3">3 minuti</option>
+          <option value="5">5 minuti</option>
+          <option value="10">10 minuti</option>
+        </select>
+        <label class="interruttore" id="gruppoSchermoCampanella">
+          <input type="checkbox" id="schermoCampanella">
+          <span>Tieni acceso lo schermo (consuma più batteria)</span>
+        </label>
+        <div class="prove-campanella">
+          <button type="button" id="provaCampanella" class="pulsante">🔔 Prova campanella</button>
+          <button type="button" id="provaPreavviso" class="pulsante">Prova preavviso</button>
+        </div>
+        <p id="avvisoAudioCampanella" class="avviso-campanella" hidden>Tocca un punto qualsiasi dello schermo per abilitare il suono.</p>
+        <p id="prossimoCampanella" class="nota-campanella" role="status"></p>
+        <p id="statoCampanella" class="nota-campanella"></p>
+        <p class="nota-campanella">Suona solo con l'app aperta sullo schermo e il volume alzato (su iPhone disattiva anche il silenzioso). Orari presi da <code>dati/campanella-TEST.json</code>.</p>
+      </div>
+    </header>
+
+    <!-- Modifiche dell'ultimo minuto all'orario della giornata (lo disegna app-TEST.js con js/modifiche-TEST.js) -->
+    <section id="modifiche" class="modifiche" role="alert" aria-labelledby="titoloModifiche" hidden></section>
+
+    <!-- Vista "In breve": la disegna js/brief-TEST.js quando si preme il tasto -->
+    <section id="vistaBreve" class="vista-breve" tabindex="-1" aria-labelledby="titoloBreve" hidden></section>
+
+    <!-- Pagina "Sostituzioni smart": la disegna js/smart-TEST.js (stile a schede come "In breve") -->
+    <section id="vistaSmart" class="vista-breve vista-smart" tabindex="-1" aria-labelledby="titoloSmart" hidden></section>
+
+    <!-- Vista «Impegni»: il calendario degli impegni dell'anno, lo disegna js/calendario-TEST.js -->
+    <section id="vistaCalendario" class="vista-breve vista-calendario" tabindex="-1" aria-labelledby="titoloCalendario" hidden></section>
+
+    <!-- Scelta di cosa vedere -->
+    <nav class="controlli" aria-label="Scelta della visualizzazione">
+      <div class="riga-controlli">
+        <div class="gruppo-colonne" role="group" aria-labelledby="etichettaColonne">
+          <span id="etichettaColonne" class="etichetta-controllo">In colonna</span>
+          <div class="segmenti">
+            <button type="button" data-colonne="classe" aria-pressed="false">Classi</button>
+            <button type="button" data-colonne="docente" aria-pressed="false">Docenti</button>
+            <button type="button" data-colonne="aula" aria-pressed="false">Aule</button>
+            <button type="button" data-colonne="giorno" aria-pressed="false">Settimana</button>
+          </div>
+        </div>
+        <div class="filtri" role="group" aria-label="Filtri">
+          <label>Classe <select id="filtro-classe"></select></label>
+          <label>Docente <select id="filtro-docente"></select></label>
+          <label>Aula <select id="filtro-aula"></select></label>
+          <button type="button" id="btnAzzera" class="pulsante leggero">Azzera filtri</button>
+          <!-- spuntato: si vedono anche le ore di compresenza (L2, Alternativa…), vedi js/compresenze-TEST.js -->
+          <div class="gruppo-compresenze">
+            <label class="spunta-compresenze"><input type="checkbox" id="mostraCompresenze"> Compresenze</label>
+            <!-- le compresenze si gestiscono in Orario Facile (scheda «Compresenze»): collegamento solo per chi può modificare l'orario -->
+            <a id="btnCompresenze" class="pulsante leggero" href="../orario-facile/#compresenze" target="_blank" rel="noopener" hidden>✎ Modifica</a>
+          </div>
+        </div>
+      </div>
+      <div id="giorni" class="giorni" role="group" aria-label="Giorno"></div>
+    </nav>
+
+    <main id="contenuto" tabindex="-1">
+      <div id="adesso" class="adesso" aria-live="polite" hidden></div>
+      <!-- Schermo all'ingresso: quale vista si sta vedendo e quanto manca alla prossima (la disegna js/ingresso-TEST.js) -->
+      <div id="indicatoreIngresso" class="indicatore-ingresso" hidden></div>
+      <p id="avviso" class="avviso" role="status" hidden></p>
+      <div id="contenitoreTabella" class="contenitore-tabella" tabindex="0" role="region" aria-labelledby="didascalia">
+        <table id="tabella" class="tabella-orario"></table>
+      </div>
+    </main>
+    <footer id="piede" class="piede"></footer>
+  </div>
+
+  <!-- Istruzioni per installare l'app quando il browser non lo fa da solo (es. iPhone) -->
+  <!-- LIM: all'intervallo mostra a tutto schermo dove vanno le classi nell'ora dopo (la disegna js/intervallo-TEST.js) -->
+  <div id="schermataIntervallo" class="schermata-intervallo" role="dialog" aria-modal="true" aria-labelledby="titoloIntervallo" hidden></div>
+
+  <dialog id="finestraInstalla" class="finestra" aria-labelledby="titoloInstalla">
+    <h2 id="titoloInstalla">Installa l'app</h2>
+    <div id="istruzioniInstalla"></div>
+    <button type="button" id="btnChiudiInstalla" class="pulsante primario">Ho capito</button>
+  </dialog>
+
+  <!-- «Le mie 40+40»: le attività funzionali del docente che ha fatto l'accesso (solo le sue, js/quaranta-ore-TEST.js) -->
+  <dialog id="finestra40ore" class="finestra finestra-40ore" aria-labelledby="titolo40ore">
+    <h2 id="titolo40ore">Le mie 40+40</h2>
+    <!-- la stessa finestra mostra anche «Le mie sostituzioni» (cambia il titolo) -->
+    <div id="contenuto40ore"></div>
+    <button type="button" id="btnChiudi40ore" class="pulsante primario">Chiudi</button>
+  </dialog>
+
+  <!-- QR code e link per far installare l'app ai colleghi -->
+  <dialog id="finestraCondividi" class="finestra finestra-condividi" aria-labelledby="titoloCondividi">
+    <h2 id="titoloCondividi">Condividi l'app</h2>
+    <p>Fai inquadrare il codice con la fotocamera del telefono. Una volta aperta l'app: menu → <strong>Installa l'app</strong>.</p>
+    <img id="qrApp" class="qr-app" src="icone/qr-app-TEST.svg" width="320" height="320" alt="">
+    <p class="indirizzo-app"><span id="indirizzoApp"></span></p>
+    <div class="azioni-finestra">
+      <button type="button" id="btnCondividiLink" class="pulsante" hidden>Condividi…</button>
+      <button type="button" id="btnCopiaLink" class="pulsante">Copia link</button>
+    </div>
+    <p id="esitoCondividi" class="esito" role="status"></p>
+    <button type="button" id="btnChiudiCondividi" class="pulsante primario">Chiudi</button>
+  </dialog>
+
+  <script src="js/dati-TEST.js"></script>
+  <script src="js/accesso-TEST.js"></script>
+  <script src="js/ruoli-TEST.js"></script>
+  <script src="js/nomi-TEST.js"></script>
+  <script src="js/autorizzazioni-TEST.js"></script>
+  <script src="js/supplenze-TEST.js"></script>
+  <script src="js/compresenze-TEST.js"></script>
+  <script src="js/piantine-TEST.js"></script>
+  <script src="js/viste-TEST.js"></script>
+  <script src="js/brief-TEST.js"></script>
+  <script src="js/smart-TEST.js"></script>
+  <script src="js/piano-attivita-TEST.js"></script>
+  <script src="js/impegni-drive-TEST.js"></script>
+  <script src="js/calendario-TEST.js"></script>
+  <!-- Excel senza librerie (lo ZIP lo fa docx-TEST.js): «Scarica il mio Excel» delle 40+40 -->
+  <script src="../sostituzioni/js/docx-TEST.js"></script>
+  <script src="js/xlsx-TEST.js"></script>
+  <script src="js/quaranta-ore-TEST.js"></script>
+  <script src="js/storico-sostituzioni-TEST.js"></script>
+  <script src="js/ingresso-TEST.js"></script>
+  <script src="js/intervallo-TEST.js"></script>
+  <script src="js/modifiche-TEST.js"></script>
+  <script src="js/storie-TEST.js"></script>
+  <script src="js/campanella-TEST.js"></script>
+  <script src="js/installa-TEST.js"></script>
+  <script src="js/condividi-TEST.js"></script>
+  <script src="js/avviso-per-te-TEST.js"></script>
+  <!-- pubblicazione automatica delle sostituzioni fatte da «Sostituzioni smart» (unite a quelle già pubblicate) -->
+  <script src="js/pubblica-drive-TEST.js"></script>
+  <script src="js/pubblica-github-TEST.js"></script>
+  <script src="js/pubblica-sostituzioni-TEST.js"></script>
+  <script src="js/app-TEST.js"></script>
+</body>
+</html>
