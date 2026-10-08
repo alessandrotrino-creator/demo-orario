@@ -718,7 +718,7 @@ td input[type=number]{width:64px}
    Dati e funzioni di base
    =========================================================== */
 const GIORNI_ALL = ['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-const KEY = 'orariofacile.v2';
+const KEY = 'demoorario.bozza';   // DEMO: nome diverso da 'orariofacile.v2' (il vecchio Orario Facile su questo stesso indirizzo usa quello)
 let _uid = 1;
 const uid = p => (p||'x') + (_uid++).toString(36) + Math.random().toString(36).slice(2,6);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
