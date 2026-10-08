@@ -6,7 +6,7 @@ const Dati = (() => {
   const CHIAVE_COPIA = 'orariodada.copiaDati';
   // Orario Facile salva il suo lavoro qui. Le due app stanno sullo stesso sito,
   // quindi condividono la memoria del browser e possiamo leggerlo direttamente.
-  const CHIAVE_BOZZA = 'orariofacile.v2';
+  const CHIAVE_BOZZA = 'demoorario.bozza';   // DEMO: deve essere uguale a KEY di orario-facile/index.html
   // Quale orario mostrare: '' = automatico (la bozza se c'è), 'bozza' o 'pubblicato'
   const CHIAVE_FONTE = 'orariodada.fonte';
 
